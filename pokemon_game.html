@@ -89,6 +89,22 @@ function getName(id){
 }
 function getStats(id){return{maxHP:50+((id*13)%70),attack:40+((id*7)%80),defense:35+((id*11)%75)};}
 
+// ── ROUTES ────────────────────────────────────────────────────
+const ROUTES=[
+  {name:"Pallet Outskirts",emoji:"🌾",desc:"Grassy fields, easy walks",lvMin:2,lvMax:7,unlockAt:0,ids:[10,13,16,19,21,29,32,161,163,172,191,263,265,396,399,504,506,519,659,661,731,734,819,821]},
+  {name:"Viridian Forest",emoji:"🌲",desc:"Bugs and bird Pokémon",lvMin:5,lvMax:13,unlockAt:3,ids:[10,11,12,13,14,15,16,25,43,46,69,165,167,177,191,265,266,267,268,269,412,415,664,665,666,736,737,824]},
+  {name:"Mt. Moon",emoji:"⛰️",desc:"Caves and craggy paths",lvMin:8,lvMax:18,unlockAt:8,ids:[27,28,35,41,50,52,56,66,74,75,95,304,305,309,408,438,524,525,744]},
+  {name:"Cerulean Sea",emoji:"🌊",desc:"Coastal waters",lvMin:12,lvMax:24,unlockAt:15,ids:[7,54,60,72,86,90,98,116,118,120,129,170,183,194,278,318,320,363,418,456,535,564,594,746,747]},
+  {name:"Power Plant",emoji:"⚡",desc:"Electric & steel types",lvMin:18,lvMax:32,unlockAt:25,ids:[25,81,82,100,101,125,179,180,239,309,311,312,403,404,417,479,522,595,604,694,695,777]},
+  {name:"Safari Zone",emoji:"🦓",desc:"Anything can appear!",lvMin:20,lvMax:45,unlockAt:40,ids:null},
+  {name:"Dragon's Den",emoji:"🐉",desc:"Pseudo-legendaries & beyond",lvMin:38,lvMax:62,unlockAt:80,ids:[147,148,149,150,151,246,247,248,371,372,373,374,375,376,443,444,445,610,611,612,633,634,635,704,705,706,782,783,784,885,886,887]},
+];
+function isRouteUnlocked(idx,caughtCount){return caughtCount>=ROUTES[idx].unlockAt;}
+
+// ── BALLS & ITEMS ─────────────────────────────────────────────
+const BALLS={pokeball:{name:"Pokéball",emoji:"🔴",mult:1,price:100,color:"#F44336"},greatBall:{name:"Great Ball",emoji:"🔵",mult:1.5,price:300,color:"#4F8FD1"},ultraBall:{name:"Ultra Ball",emoji:"⚫",mult:2.5,price:800,color:"#D9B921"}};
+const ITEMS={potion:{name:"Potion",emoji:"🧪",desc:"Heals 50 HP",price:150,heal:50},superPotion:{name:"Super Potion",emoji:"💉",desc:"Heals 150 HP",price:400,heal:150},revive:{name:"Revive",emoji:"💖",desc:"Revive at 50% HP",price:600,revive:true}};
+
 // ── EVOLUTIONS ────────────────────────────────────────────────
 const EVOS={1:[2,16],2:[3,32],4:[5,16],5:[6,36],7:[8,16],8:[9,36],10:[11,7],11:[12,10],13:[14,7],14:[15,10],16:[17,18],17:[18,36],19:[20,20],21:[22,20],23:[24,22],25:[26,22],27:[28,22],29:[30,16],30:[31,36],32:[33,16],33:[34,36],37:[38,29],39:[40,12],41:[42,22],43:[44,21],44:[45,34],46:[47,24],48:[49,31],50:[51,26],52:[53,28],54:[55,33],56:[57,28],58:[59,28],60:[61,25],61:[62,36],63:[64,16],64:[65,36],66:[67,28],67:[68,36],69:[70,21],70:[71,34],72:[73,30],74:[75,25],75:[76,36],77:[78,40],79:[80,37],81:[82,30],84:[85,31],86:[87,34],88:[89,38],90:[91,50],92:[93,25],93:[94,36],96:[97,26],98:[99,28],100:[101,30],102:[103,28],104:[105,28],109:[110,35],111:[112,42],116:[117,32],118:[119,33],129:[130,20],138:[139,40],140:[141,40],147:[148,30],148:[149,55],152:[153,16],153:[154,32],155:[156,14],156:[157,36],158:[159,18],159:[160,30],161:[162,15],163:[164,20],165:[166,18],167:[168,22],170:[171,27],172:[25,22],175:[176,25],177:[178,25],179:[180,15],180:[181,30],183:[184,18],187:[188,18],188:[189,27],191:[192,25],194:[195,20],204:[205,31],209:[210,23],216:[217,30],218:[219,38],220:[221,33],223:[224,25],231:[232,25],246:[247,30],247:[248,55]};
 
@@ -138,29 +154,46 @@ function sv(k,v){try{localStorage.setItem(sk(k),JSON.stringify(v));}catch{}}
 function ld(k,d){try{const v=localStorage.getItem(sk(k));return v!=null?JSON.parse(v):d;}catch{return d;}}
 function getUsers(){try{return JSON.parse(localStorage.getItem("pk_users")||"[]");}catch{return[];}}
 function setUsers(u){try{localStorage.setItem("pk_users",JSON.stringify(u));}catch{}}
-function delUser(name){["party","caught","seen","balls"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
-function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("balls",S.balls);}
+function delUser(name){["party","caught","seen","balls","greatBalls","ultraBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
+function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
 
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   screen:"users",
-  party:[],caught:[],seen:[],balls:20,
-  wild:null,wildHP:0,playerHP:0,
+  party:[],caught:[],seen:[],
+  balls:20,greatBalls:0,ultraBalls:0,
+  potions:0,superPotions:0,revives:0,
+  coins:300,lastRoute:0,
+  wild:null,wildHP:0,playerHP:0,currentRoute:0,
   log:[],bState:"active",busy:false,
   pendingEvo:null,levelUpData:null,
   switchCtx:"hub", // "hub" | "battle" | "faint"
+  bagOpen:false,reviveTarget:false,
 };
 function addLog(m){S.log=[...S.log.slice(-30),m];}
 
-function buildWild(id){
+function buildWild(id,level){
   const st=getStats(id);
-  return{id,name:getName(id),types:getTypes(id),maxHP:st.maxHP,attack:st.attack,defense:st.defense,level:Math.floor(Math.random()*25)+3};
+  const lv=level||(Math.floor(Math.random()*25)+3);
+  // Scale wild stats slightly by level so higher routes feel tougher
+  const scale=1+(lv-5)*0.025;
+  return{id,name:getName(id),types:getTypes(id),
+    maxHP:Math.max(20,Math.floor(st.maxHP*Math.max(0.85,scale))),
+    attack:Math.max(20,Math.floor(st.attack*Math.max(0.85,scale))),
+    defense:Math.max(20,Math.floor(st.defense*Math.max(0.85,scale))),
+    level:lv};
+}
+function pickRouteEncounter(routeIdx){
+  const r=ROUTES[routeIdx]||ROUTES[0];
+  const id=r.ids?r.ids[Math.floor(Math.random()*r.ids.length)]:(Math.floor(Math.random()*TOTAL)+1);
+  const lv=r.lvMin+Math.floor(Math.random()*(r.lvMax-r.lvMin+1));
+  return{id,level:lv};
 }
 
 // ── RENDER ────────────────────────────────────────────────────
 function render(){
   try{
-    const map={users:sUsers,title:sTitle,starter:sStarter,hub:sHub,battle:sBattle,party:sParty,dex:sDex,shop:sShop,levelup:sLevelUp,switch:sSwitch};
+    const map={users:sUsers,title:sTitle,starter:sStarter,hub:sHub,battle:sBattle,party:sParty,dex:sDex,shop:sShop,levelup:sLevelUp,switch:sSwitch,routes:sRoutes,revive:sRevive};
     document.getElementById("app").innerHTML=(map[S.screen]||sUsers)();
   }catch(e){
     document.getElementById("app").innerHTML=`<div class="scr"><p style="color:#F44336">Error: ${e.message}</p><button onclick="S.screen='hub';render()">Go to hub</button></div>`;
@@ -239,7 +272,16 @@ function sHub(){
   return`<div class="fi scr">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
       <span style="font-size:13px;color:#aaa">👤 <strong style="color:#eee">${USER}</strong></span>
-      <span style="font-size:12px;color:#aaa">🎯 ${S.balls} balls</span>
+      <span style="font-size:12px;color:#D9B921;font-weight:600">🪙 ${S.coins}</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:0.5rem;font-size:11px;color:#aaa;flex-wrap:wrap">
+      <span title="Pokéball">🔴 ${S.balls}</span>
+      <span title="Great Ball">🔵 ${S.greatBalls}</span>
+      <span title="Ultra Ball">⚫ ${S.ultraBalls}</span>
+      <span style="color:#444">·</span>
+      <span title="Potion">🧪 ${S.potions}</span>
+      <span title="Super Potion">💉 ${S.superPotions}</span>
+      <span title="Revive">💖 ${S.revives}</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:1rem">
       ${[["Caught",S.caught.length],["Seen",S.seen.length],["Party",S.party.length+"/6"]].map(([l,v])=>`<div class="stat"><div style="font-size:19px;font-weight:600">${v}</div><div style="font-size:11px;color:#aaa">${l}</div></div>`).join("")}
@@ -260,7 +302,7 @@ function sHub(){
     </div>
     <div style="height:0.75rem"></div>
     <div class="g2">
-      <button id="bexplore" ${L.currentHP<=0?"disabled":""}>⚔️ Explore</button>
+      <button id="broutes" ${L.currentHP<=0?"disabled":""}>🗺️ Routes</button>
       <button id="bheal">💊 Heal all</button>
     </div>
     <div class="g3">
@@ -329,12 +371,34 @@ function sBattle(){
           </div>`:""}
         <button id="bhub" style="padding:0.75rem 2rem;width:auto;display:inline-block">← Back to hub</button>
       </div>`:`
+      ${S.bagOpen?`
+        <div class="card" style="border-color:#4F8FD1;margin-bottom:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+            <span style="font-weight:700">🎒 Bag</span>
+            <button id="bclosebag" style="width:auto;padding:0.3rem 0.7rem;font-size:11px">← Back</button>
+          </div>
+          <div style="font-size:11px;color:#aaa;margin-bottom:6px">POKÉBALLS</div>
+          <div class="g3" style="margin-bottom:8px">
+            ${Object.entries(BALLS).map(([k,b])=>{
+              const cnt=k==="pokeball"?S.balls:k==="greatBall"?S.greatBalls:S.ultraBalls;
+              return`<button class="bagball" data-key="${k}" ${S.busy||cnt<=0?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem;border-color:${b.color};color:${b.color}">${b.emoji} ${b.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
+            }).join("")}
+          </div>
+          <div style="font-size:11px;color:#aaa;margin-bottom:6px">ITEMS</div>
+          <div class="g3">
+            ${Object.entries(ITEMS).map(([k,it])=>{
+              const cnt=k==="potion"?S.potions:k==="superPotion"?S.superPotions:S.revives;
+              const disabled=S.busy||cnt<=0||(k!=="revive"&&S.playerHP>=pl.maxHP);
+              return`<button class="bagitem" data-key="${k}" ${disabled?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem">${it.emoji} ${it.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
+            }).join("")}
+          </div>
+        </div>`:`
       <div class="g3">
         <button id="batk" ${S.busy?"disabled":""}>⚔️ Attack</button>
-        <button id="bcatch" ${S.busy||!hasBalls?"disabled":""}>🎯 Catch (${S.balls})</button>
+        <button id="bopenbag" ${S.busy?"disabled":""}>🎒 Bag</button>
         <button id="brun" ${S.busy?"disabled":""}>🏃 Run</button>
       </div>
-      <button id="bswitchbattle" ${S.busy||!canSwitch?"disabled":""} style="margin-top:0">🔄 Switch Pokémon</button>`}
+      <button id="bswitchbattle" ${S.busy||!canSwitch?"disabled":""} style="margin-top:0">🔄 Switch Pokémon</button>`}`}
   </div>`;
 }
 
@@ -389,24 +453,87 @@ function sDex(){
 }
 
 function sShop(){
+  const shopItems=[
+    {key:"pokeball",label:"🔴 Pokéball",sub:"Standard catch chance",price:BALLS.pokeball.price,color:"#F44336"},
+    {key:"greatBall",label:"🔵 Great Ball",sub:"1.5× catch chance",price:BALLS.greatBall.price,color:"#4F8FD1"},
+    {key:"ultraBall",label:"⚫ Ultra Ball",sub:"2.5× catch chance",price:BALLS.ultraBall.price,color:"#D9B921"},
+    {key:"potion",label:"🧪 Potion",sub:"Heals 50 HP in battle",price:ITEMS.potion.price,color:"#4CAF50"},
+    {key:"superPotion",label:"💉 Super Potion",sub:"Heals 150 HP in battle",price:ITEMS.superPotion.price,color:"#4CAF50"},
+    {key:"revive",label:"💖 Revive",sub:"Revive a fainted Pokémon",price:ITEMS.revive.price,color:"#F472B6"},
+  ];
   return`<div class="fi scr">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
       <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
       <div><h2 style="margin:0">Shop</h2>
-        <div style="font-size:12px;color:#aaa">You have ${S.balls} ball${S.balls!==1?"s":""}</div>
+        <div style="font-size:12px;color:#D9B921;font-weight:600">🪙 ${S.coins} coins</div>
       </div>
     </div>
     <div class="card" style="border-color:#4CAF5066;margin-bottom:0.75rem">
-      <div style="font-size:13px;color:#aaa">💡 Win battles to earn <strong style="color:#eee">+1 ball</strong> each time!</div>
+      <div style="font-size:13px;color:#aaa">💡 Win battles to earn <strong style="color:#D9B921">coins</strong> + a free Pokéball each time!</div>
     </div>
-    <div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
-      <div><div style="font-weight:600;margin-bottom:2px">🎯 +3 Pokéballs</div><div style="font-size:12px;color:#aaa">Forage the tall grass</div></div>
-      <button id="bget3" style="width:auto;padding:0.5rem 1rem;background:#1a3a1a;border-color:#4CAF50;color:#4CAF50;font-weight:600">Get</button>
+    ${shopItems.map(it=>{
+      const cnt=it.key==="pokeball"?S.balls:it.key==="greatBall"?S.greatBalls:it.key==="ultraBall"?S.ultraBalls:it.key==="potion"?S.potions:it.key==="superPotion"?S.superPotions:S.revives;
+      const can=S.coins>=it.price;
+      return`<div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <div style="min-width:0;flex:1">
+          <div style="font-weight:600;margin-bottom:2px">${it.label} <span style="font-size:11px;color:#888;font-weight:400">×${cnt}</span></div>
+          <div style="font-size:12px;color:#aaa">${it.sub}</div>
+        </div>
+        <button class="buybtn" data-key="${it.key}" ${can?"":"disabled"} style="width:auto;padding:0.5rem 0.85rem;background:transparent;border-color:${can?it.color:"#444"};color:${can?it.color:"#666"};font-weight:600;font-size:12px;white-space:nowrap">🪙 ${it.price}</button>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function sRoutes(){
+  const caughtCount=S.caught.length;
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
+      <div><h2 style="margin:0">Choose a Route</h2>
+        <div style="font-size:12px;color:#aaa">Different areas, different Pokémon</div>
+      </div>
     </div>
-    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-      <div><div style="font-weight:600;margin-bottom:2px">🎒 +10 Pokéballs</div><div style="font-size:12px;color:#aaa">Visit the Pokémon Centre</div></div>
-      <button id="bget10" style="width:auto;padding:0.5rem 1rem;background:#1a2a3a;border-color:#4F8FD1;color:#4F8FD1;font-weight:600">Get</button>
+    ${ROUTES.map((r,i)=>{
+      const unlocked=isRouteUnlocked(i,caughtCount);
+      const tease=unlocked?"":`🔒 Catch ${r.unlockAt} Pokémon to unlock`;
+      return`<div class="card" style="display:flex;align-items:center;gap:12px;opacity:${unlocked?1:0.45}">
+        <div style="font-size:34px;width:48px;text-align:center">${r.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+            <span style="font-weight:700">${r.name}</span>
+            <span style="font-size:10px;color:#D9B921;font-weight:600">Lv.${r.lvMin}–${r.lvMax}</span>
+          </div>
+          <div style="font-size:12px;color:#aaa">${unlocked?r.desc:tease}</div>
+        </div>
+        ${unlocked?`<button class="rtbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:#1a3a1a;border-color:#4CAF50;color:#4CAF50">Go ⚔️</button>`:`<div style="width:74px;font-size:18px;text-align:center;color:#555">🔒</div>`}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function sRevive(){
+  const fainted=S.party.map((p,i)=>({p,i})).filter(x=>x.p.currentHP<=0);
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button id="bcancelrevive" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Cancel</button>
+      <div><h2 style="margin:0">Use Revive</h2>
+        <div style="font-size:12px;color:#aaa">Pick a fainted Pokémon (${S.revives} left)</div>
+      </div>
     </div>
+    ${fainted.length===0?`<div class="card" style="text-align:center;color:#aaa">No fainted Pokémon to revive!</div>`:fainted.map(({p,i})=>`
+      <div class="card" style="display:flex;align-items:center;gap:12px">
+        ${img(p.id,52,false)}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+            <span style="font-weight:600">${p.name}</span>${lvbadge(p.level)}
+            <span style="font-size:10px;color:#F44336;font-weight:700">FAINTED</span>
+          </div>
+          <div style="margin-bottom:5px">${badges(p.types)}</div>
+          ${hpBar(p.currentHP,p.maxHP)}
+        </div>
+        <button class="revbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:#3a1a1a;border-color:#F44336;color:#F44336">Revive</button>
+      </div>`).join("")}
   </div>`;
 }
 
@@ -468,17 +595,19 @@ function sSwitch(){
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────
-function doExplore(){
-  const id=Math.floor(Math.random()*TOTAL)+1;
-  const w=buildWild(id);
+function doExplore(routeIdx){
+  if(typeof routeIdx==="number")S.currentRoute=routeIdx;
+  S.lastRoute=S.currentRoute;
+  const{id,level}=pickRouteEncounter(S.currentRoute);
+  const w=buildWild(id,level);
   if(!S.seen.includes(id)){S.seen.push(id);sv("seen",S.seen);}
   S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
-  S.log=[];S.pendingEvo=null;S.levelUpData=null;
-  addLog(`⚡ A wild ${w.name} appeared!`);
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;
+  addLog(`⚡ A wild ${w.name} appeared! (${ROUTES[S.currentRoute].name})`);
   const e=tEff(S.party[0].types,w.types);
   if(e>=2)addLog("✨ Your type is super effective!");
   else if(e>0&&e<1)addLog("😬 Its type resists yours...");
-  S.bState="active";S.screen="battle";render();
+  S.bState="active";S.screen="battle";sv("lastRoute",S.lastRoute);render();
 }
 
 function checkFaint(){
@@ -506,12 +635,15 @@ async function doAtk(){
   if(S.wildHP<=0){
     // Win!
     S.balls++;
-    const gained=Math.floor((S.wild.level||5)*15*(0.8+Math.random()*0.4));
+    const wLv=S.wild.level||5;
+    const coinReward=Math.floor(15+wLv*2+Math.random()*wLv*1.5);
+    S.coins+=coinReward;
+    const gained=Math.floor(wLv*15*(0.8+Math.random()*0.4));
     let p={...S.party[0],currentHP:S.playerHP};
     p.xp=(p.xp||0)+gained;
     const oldLv=p.level||1;
     p.level=levelFromXP(p.xp);
-    addLog(`💀 Wild ${S.wild.name} fainted! +${gained} XP (+1 ball)`);
+    addLog(`💀 Wild ${S.wild.name} fainted! +${gained} XP, +${coinReward} 🪙, +1 🔴`);
     if(p.level>oldLv){
       const ns=getStats(p.id);
       const nHP=Math.min(p.maxHP+Math.floor((p.level-oldLv)*2.5), ns.maxHP+30);
@@ -536,12 +668,16 @@ async function doAtk(){
   render();
 }
 
-async function doCatch(){
-  if(S.busy||S.bState!=="active"||S.balls<=0)return;
-  S.busy=true;S.balls--;
-  addLog(`🎯 Threw a Pokéball! (${S.balls} left)`);render();
+async function doCatch(ballKey){
+  ballKey=ballKey||"pokeball";
+  const ball=BALLS[ballKey];
+  const stockField=ballKey==="pokeball"?"balls":ballKey==="greatBall"?"greatBalls":"ultraBalls";
+  if(S.busy||S.bState!=="active"||S[stockField]<=0)return;
+  S.busy=true;S[stockField]--;S.bagOpen=false;
+  addLog(`${ball.emoji} Threw a ${ball.name}!`);render();
   await delay(700);
-  const chance=Math.min(0.93,(1-(S.wildHP/S.wild.maxHP)*0.6)*0.75);
+  const base=(1-(S.wildHP/S.wild.maxHP)*0.6)*0.75;
+  const chance=Math.min(0.97,base*ball.mult);
   if(Math.random()<chance){
     addLog(`🎉 Gotcha! ${S.wild.name} was caught!`);S.bState="caught";
     if(!S.caught.includes(S.wild.id))S.caught.push(S.wild.id);
@@ -555,9 +691,50 @@ async function doCatch(){
   const{dmg}=calcDmg(S.wild,S.party[0]);
   S.playerHP=Math.max(0,S.playerHP-Math.max(1,Math.floor(dmg*0.5)));
   addLog(`💥 ${S.wild.name} attacks for ${Math.max(1,Math.floor(dmg*0.5))} dmg!`);
-  sv("balls",S.balls);
+  saveAll();
   S.busy=false;
   if(checkFaint()){render();return;}
+  render();
+}
+
+async function doUseItem(key){
+  const it=ITEMS[key];if(!it)return;
+  const stockField=key==="potion"?"potions":key==="superPotion"?"superPotions":"revives";
+  if(S[stockField]<=0)return;
+  if(it.revive){
+    // Switch to revive picker screen
+    S.bagOpen=false;S.screen="revive";render();return;
+  }
+  // Heal
+  if(S.busy||S.bState!=="active")return;
+  const pl=S.party[0];
+  if(S.playerHP>=pl.maxHP)return;
+  S.busy=true;S[stockField]--;S.bagOpen=false;
+  const before=S.playerHP;
+  S.playerHP=Math.min(pl.maxHP,S.playerHP+it.heal);
+  const healed=S.playerHP-before;
+  addLog(`${it.emoji} Used ${it.name}! ${pl.name} restored ${healed} HP.`);
+  saveAll();render();
+  await delay(450);
+  // Wild gets a free attack since you used a turn
+  const{dmg,eff}=calcDmg(S.wild,pl);
+  S.playerHP=Math.max(0,S.playerHP-dmg);
+  addLog(`💥 Wild ${S.wild.name} dealt ${dmg} dmg!${eff>=2?" Super effective!":eff>0&&eff<1?" Not very effective...":""}`);
+  S.busy=false;
+  if(checkFaint()){render();return;}
+  render();
+}
+
+function doRevive(idx){
+  if(S.revives<=0)return;
+  const p=S.party[idx];if(!p||p.currentHP>0)return;
+  S.revives--;
+  S.party[idx]={...p,currentHP:Math.floor(p.maxHP*0.5)};
+  addLog(`💖 ${p.name} was revived!`);
+  saveAll();
+  // Return to wherever revive was triggered: battle if active, else hub
+  if(S.wild&&S.bState==="active"){S.screen="battle";}
+  else{S.screen="hub";}
   render();
 }
 
@@ -624,7 +801,10 @@ function bind(){
   document.querySelectorAll("[id^='pu']").forEach(el=>{
     el.addEventListener("click",()=>{
       const u=el.dataset.user;USER=u;
-      S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);S.balls=ld("balls",20);
+      S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);
+      S.balls=ld("balls",20);S.greatBalls=ld("greatBalls",0);S.ultraBalls=ld("ultraBalls",0);
+      S.potions=ld("potions",0);S.superPotions=ld("superPotions",0);S.revives=ld("revives",0);
+      S.coins=ld("coins",300);S.lastRoute=ld("lastRoute",0);S.currentRoute=S.lastRoute;
       S.screen=S.party.length>0?"hub":"title";render();
     });
   });
@@ -640,7 +820,10 @@ function bind(){
     const users=getUsers();
     if(users.includes(name)){alert("Name already taken!");return;}
     users.push(name);setUsers(users);
-    USER=name;S.party=[];S.caught=[];S.seen=[];S.balls=20;
+    USER=name;S.party=[];S.caught=[];S.seen=[];
+    S.balls=20;S.greatBalls=0;S.ultraBalls=0;
+    S.potions=0;S.superPotions=0;S.revives=0;
+    S.coins=300;S.lastRoute=0;S.currentRoute=0;
     S.screen="title";render();
   };
   on("badduser",addUser);
@@ -648,14 +831,48 @@ function bind(){
 
   // Nav
   on("bnew",()=>{S.screen="starter";render();});
-  on("bhub",()=>{S.levelUpData=null;S.screen="hub";render();});
+  on("bhub",()=>{S.levelUpData=null;S.bagOpen=false;S.screen="hub";render();});
   on("bswitch",()=>{S.screen="users";render();});
   on("bswitchuser",()=>{S.screen="users";render();});
   on("bparty",()=>{S.screen="party";render();});
   on("bdex",()=>{S.screen="dex";render();});
   on("bshop",()=>{S.screen="shop";render();});
+  on("broutes",()=>{S.screen="routes";render();});
   on("bchooseLead",()=>{S.switchCtx="hub";S.screen="switch";render();});
-  on("bswitchbattle",()=>{S.switchCtx="battle";S.screen="switch";render();});
+  on("bswitchbattle",()=>{S.switchCtx="battle";S.bagOpen=false;S.screen="switch";render();});
+  on("bopenbag",()=>{S.bagOpen=true;render();});
+  on("bclosebag",()=>{S.bagOpen=false;render();});
+  on("bcancelrevive",()=>{S.screen=(S.wild&&S.bState==="active")?"battle":"hub";render();});
+
+  // Route picker
+  document.querySelectorAll(".rtbtn").forEach(btn=>{
+    btn.addEventListener("click",()=>doExplore(parseInt(btn.dataset.idx)));
+  });
+
+  // Bag balls / items
+  document.querySelectorAll(".bagball").forEach(btn=>{
+    btn.addEventListener("click",()=>doCatch(btn.dataset.key));
+  });
+  document.querySelectorAll(".bagitem").forEach(btn=>{
+    btn.addEventListener("click",()=>doUseItem(btn.dataset.key));
+  });
+
+  // Revive picker
+  document.querySelectorAll(".revbtn").forEach(btn=>{
+    btn.addEventListener("click",()=>doRevive(parseInt(btn.dataset.idx)));
+  });
+
+  // Shop buy
+  document.querySelectorAll(".buybtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const key=btn.dataset.key;
+      const price=BALLS[key]?BALLS[key].price:ITEMS[key].price;
+      if(S.coins<price)return;
+      S.coins-=price;
+      const field=key==="pokeball"?"balls":key==="greatBall"?"greatBalls":key==="ultraBall"?"ultraBalls":key==="potion"?"potions":key==="superPotion"?"superPotions":"revives";
+      S[field]++;saveAll();render();
+    });
+  });
 
   // Starters
   STARTERS.forEach(p=>{
@@ -667,7 +884,6 @@ function bind(){
 
   // Battle
   on("batk",doAtk);
-  on("bcatch",doCatch);
   on("brun",doRun);
   on("bheal",doHeal);
 
@@ -703,14 +919,14 @@ function bind(){
     });
   });
 
-  // Shop
-  on("bget3",()=>{S.balls+=3;sv("balls",S.balls);render();});
-  on("bget10",()=>{S.balls+=10;sv("balls",S.balls);render();});
-
   // Reset
   on("breset",()=>{
     if(!confirm("Reset "+USER+"'s save?"))return;
-    S.party=[];S.caught=[];S.seen=[];S.balls=20;saveAll();S.screen="title";render();
+    S.party=[];S.caught=[];S.seen=[];
+    S.balls=20;S.greatBalls=0;S.ultraBalls=0;
+    S.potions=0;S.superPotions=0;S.revives=0;
+    S.coins=300;S.lastRoute=0;S.currentRoute=0;
+    saveAll();S.screen="title";render();
   });
 }
 
