@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)file:///Users/annie/Downloads/pokemon_game_12.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokémon</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh;display:flex;justify-content:center;padding:1rem}
+#app{width:100%;max-width:460px}
+button{font-family:inherit;cursor:pointer;border:1px solid #444;background:#2a2a3e;color:#eee;border-radius:8px;padding:0.6rem 1rem;font-size:14px;transition:all 0.12s;width:100%}
+button:hover:not(:disabled){background:#3a3a5e;transform:translateY(-1px)}
+button:active:not(:disabled){transform:scale(0.97)}
+button:disabled{opacity:0.35;cursor:not-allowed}
+.card{background:#2a2a3e;border:1px solid #3a3a5e;border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;color:#fff;display:inline-block}
+.hpt{height:7px;background:#333;border-radius:4px;overflow:hidden;flex:1}
+.logb{background:#111;border:1px solid #222;border-radius:8px;padding:0.75rem;height:110px;overflow-y:auto;font-size:13px;line-height:1.7;margin-bottom:8px}
+.logb p{color:#888}.logb p:last-child{color:#fff}
+.stat{background:#222;border-radius:8px;padding:0.5rem;text-align:center;flex:1}
+.bob{animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.fi{animation:fi 0.3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+input{font-family:inherit;padding:0.6rem 0.85rem;border-radius:8px;border:1px solid #555;background:#2a2a3e;color:#eee;font-size:14px;outline:none;width:100%}
+input:focus{border-color:#888}
+.scr{padding:1rem}
+</style>
+</head>
+<body><div id="app"><div class="fi scr" style="padding-top:1.5rem">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:52px">⚡</div>
+      <h1 style="font-size:26px;font-weight:700;margin:4px 0 2px">Pokémon</h1>
+      <p style="color:#aaa;font-size:13px">Who's playing?</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem">
+      
+      
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="pu0" data-user="ethan" style="flex:1;display:flex;align-items:center;gap:12px;background:#2a2a3e;border:1px solid #444;border-radius:10px;padding:0.75rem 1rem;cursor:pointer;transition:all 0.12s" onmouseenter="this.style.borderColor=&#39;#888&#39;;this.style.background=&#39;#3a3a5e&#39;" onmouseleave="this.style.borderColor=&#39;#444&#39;;this.style.background=&#39;#2a2a3e&#39;">
+            <span style="font-size:26px">🧢</span>
+            <div>
+              <div style="font-weight:600;font-size:15px">ethan</div>
+              <div style="font-size:11px;color:#aaa">9 caught</div>
+            </div>
+          </div>
+          <button class="delu" data-user="ethan" style="width:38px;padding:0.5rem;font-size:16px;color:#F44336;border-color:#F44336;background:transparent;flex-shrink:0">🗑️</button>
+        </div>
+    </div>
+    <div style="border-top:1px solid #333;padding-top:1.25rem">
+      <p style="font-size:13px;color:#aaa;margin-bottom:0.75rem;text-align:center">Add new player</p>
+      <div style="display:flex;gap:8px">
+        <input id="ni" type="text" maxlength="16" placeholder="Enter your name..." style="flex:1;width:auto">
+        <button id="badduser" style="width:auto;padding:0.6rem 1rem;font-weight:600;white-space:nowrap">Add ➕</button>
+      </div>
+    </div>
+  </div></div>
+<script>
+// ── TYPES ─────────────────────────────────────────────────────
+const TYPES=["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+const TCOLOR=["#9099A1","#E8822D","#4F8FD1","#D9B921","#5FAF41","#5FC7C7","#B63A3A","#9B4FA0","#C8A83C","#7D79CE","#D44E8B","#8DAB0F","#9E8B37","#5B4D7E","#4C40BE","#5B4D3F","#8BA3B2","#CC70A6"];
+const EFF={normal:{rock:0.5,steel:0.5,ghost:0},fire:{grass:2,ice:2,bug:2,steel:2,water:0.5,fire:0.5,rock:0.5,dragon:0.5},water:{fire:2,ground:2,rock:2,water:0.5,grass:0.5,dragon:0.5},grass:{water:2,ground:2,rock:2,fire:0.5,grass:0.5,poison:0.5,flying:0.5,bug:0.5,dragon:0.5,steel:0.5},electric:{water:2,flying:2,grass:0.5,electric:0.5,dragon:0.5,ground:0},ice:{grass:2,ground:2,flying:2,dragon:2,fire:0.5,water:0.5,ice:0.5,steel:0.5},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:0.5,bug:0.5,psychic:0.5,flying:0.5,fairy:0.5,ghost:0},poison:{grass:2,fairy:2,poison:0.5,ground:0.5,rock:0.5,ghost:0.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:0.5,bug:0.5,flying:0},flying:{grass:2,fighting:2,bug:2,electric:0.5,rock:0.5,steel:0.5},psychic:{fighting:2,poison:2,psychic:0.5,dark:0,steel:0.5},bug:{grass:2,psychic:2,dark:2,fire:0.5,fighting:0.5,flying:0.5,ghost:0.5,steel:0.5,fairy:0.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:0.5,ground:0.5,steel:0.5},ghost:{psychic:2,ghost:2,normal:0,dark:0.5},dragon:{dragon:2,steel:0.5,fairy:0},dark:{psychic:2,ghost:2,fighting:0.5,dark:0.5,fairy:0.5},steel:{ice:2,rock:2,fairy:2,fire:0.5,water:0.5,electric:0.5,steel:0.5},fairy:{fighting:2,dragon:2,dark:2,fire:0.5,poison:0.5,steel:0.5}};
+function tEff(a,d){let m=1;for(const x of a)for(const y of d)m*=(EFF[x]?.[y]??1);return m;}
+
+// ── NAMES & TYPES ─────────────────────────────────────────────
+const G1N=["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch'd","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr. Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"];
+const G2N={152:"Chikorita",153:"Bayleef",154:"Meganium",155:"Cyndaquil",156:"Quilava",157:"Typhlosion",158:"Totodile",159:"Croconaw",160:"Feraligatr",161:"Sentret",162:"Furret",163:"Hoothoot",164:"Noctowl",165:"Ledyba",166:"Ledian",167:"Spinarak",168:"Ariados",169:"Crobat",170:"Chinchou",171:"Lanturn",172:"Pichu",173:"Cleffa",174:"Igglybuff",175:"Togepi",176:"Togetic",177:"Natu",178:"Xatu",179:"Mareep",180:"Flaaffy",181:"Ampharos",182:"Bellossom",183:"Marill",184:"Azumarill",185:"Sudowoodo",186:"Politoed",187:"Hoppip",188:"Skiploom",189:"Jumpluff",190:"Aipom",191:"Sunkern",192:"Sunflora",193:"Yanma",194:"Wooper",195:"Quagsire",196:"Espeon",197:"Umbreon",198:"Murkrow",199:"Slowking",200:"Misdreavus",201:"Unown",202:"Wobbuffet",203:"Girafarig",204:"Pineco",205:"Forretress",206:"Dunsparce",207:"Gligar",208:"Steelix",209:"Snubbull",210:"Granbull",211:"Qwilfish",212:"Scizor",213:"Shuckle",214:"Heracross",215:"Sneasel",216:"Teddiursa",217:"Ursaring",218:"Slugma",219:"Magcargo",220:"Swinub",221:"Piloswine",222:"Corsola",223:"Remoraid",224:"Octillery",225:"Delibird",226:"Mantine",227:"Skarmory",228:"Houndour",229:"Houndoom",230:"Kingdra",231:"Phanpy",232:"Donphan",233:"Porygon2",234:"Stantler",235:"Smeargle",236:"Tyrogue",237:"Hitmontop",238:"Smoochum",239:"Elekid",240:"Magby",241:"Miltank",242:"Blissey",243:"Raikou",244:"Entei",245:"Suicune",246:"Larvitar",247:"Pupitar",248:"Tyranitar",249:"Lugia",250:"Ho-oh",251:"Celebi"};
+const G1T={"1":["grass","poison"],"2":["grass","poison"],"3":["grass","poison"],"4":["fire"],"5":["fire"],"6":["fire","flying"],"7":["water"],"8":["water"],"9":["water"],"10":["bug"],"11":["bug"],"12":["bug","flying"],"13":["bug","poison"],"14":["bug","poison"],"15":["bug","poison"],"16":["normal","flying"],"17":["normal","flying"],"18":["normal","flying"],"19":["normal"],"20":["normal"],"21":["normal","flying"],"22":["normal","flying"],"23":["poison"],"24":["poison"],"25":["electric"],"26":["electric"],"27":["ground"],"28":["ground"],"29":["poison"],"30":["poison"],"31":["poison","ground"],"32":["poison"],"33":["poison"],"34":["poison","ground"],"35":["normal","fairy"],"36":["normal","fairy"],"37":["fire"],"38":["fire"],"39":["normal","fairy"],"40":["normal","fairy"],"41":["poison","flying"],"42":["poison","flying"],"43":["grass","poison"],"44":["grass","poison"],"45":["grass","poison"],"46":["bug","grass"],"47":["bug","grass"],"48":["bug","poison"],"49":["bug","poison"],"50":["ground"],"51":["ground"],"52":["normal"],"53":["normal"],"54":["water","psychic"],"55":["water","psychic"],"56":["fighting"],"57":["fighting"],"58":["fire"],"59":["fire"],"60":["water"],"61":["water"],"62":["water","fighting"],"63":["psychic"],"64":["psychic"],"65":["psychic"],"66":["fighting"],"67":["fighting"],"68":["fighting"],"69":["grass","poison"],"70":["grass","poison"],"71":["grass","poison"],"72":["water","poison"],"73":["water","poison"],"74":["rock","ground"],"75":["rock","ground"],"76":["rock","ground"],"77":["fire"],"78":["fire"],"79":["water","psychic"],"80":["water","psychic"],"81":["electric","steel"],"82":["electric","steel"],"83":["normal","flying"],"84":["normal","flying"],"85":["normal","flying"],"86":["water"],"87":["water","ice"],"88":["poison"],"89":["poison"],"90":["water"],"91":["water","ice"],"92":["ghost","poison"],"93":["ghost","poison"],"94":["ghost","poison"],"95":["rock","ground"],"96":["psychic"],"97":["psychic"],"98":["water"],"99":["water"],"100":["electric"],"101":["electric"],"102":["grass","psychic"],"103":["grass","psychic"],"104":["ground"],"105":["ground"],"106":["fighting"],"107":["fighting"],"108":["normal"],"109":["poison"],"110":["poison"],"111":["ground","rock"],"112":["ground","rock"],"113":["normal"],"114":["grass"],"115":["normal"],"116":["water"],"117":["water"],"118":["water"],"119":["water"],"120":["water"],"121":["water","psychic"],"122":["psychic","fairy"],"123":["bug","flying"],"124":["ice","psychic"],"125":["electric"],"126":["fire"],"127":["bug"],"128":["normal"],"129":["water"],"130":["water","flying"],"131":["water","ice"],"132":["normal"],"133":["normal"],"134":["water"],"135":["electric"],"136":["fire"],"137":["normal"],"138":["rock","water"],"139":["rock","water"],"140":["rock","water"],"141":["rock","water"],"142":["rock","flying"],"143":["normal"],"144":["ice","flying"],"145":["electric","flying"],"146":["fire","flying"],"147":["dragon"],"148":["dragon"],"149":["dragon","flying"],"150":["psychic"],"151":["psychic"]};
+const G2T={"152":["grass"],"153":["grass"],"154":["grass"],"155":["fire"],"156":["fire"],"157":["fire"],"158":["water"],"159":["water"],"160":["water"],"161":["normal"],"162":["normal"],"163":["normal","flying"],"164":["normal","flying"],"165":["bug","normal"],"166":["bug","flying"],"167":["bug","poison"],"168":["bug","poison"],"169":["poison","flying"],"170":["water","electric"],"171":["water","electric"],"172":["electric"],"173":["normal","fairy"],"174":["normal","fairy"],"175":["normal","fairy"],"176":["normal","fairy"],"177":["psychic"],"178":["psychic"],"179":["electric"],"180":["electric"],"181":["electric"],"182":["grass"],"183":["water","fairy"],"184":["water","fairy"],"185":["rock"],"186":["water"],"187":["grass"],"188":["grass"],"189":["grass","flying"],"190":["normal"],"191":["grass"],"192":["grass"],"193":["bug","flying"],"194":["water","ground"],"195":["water","ground"],"196":["psychic"],"197":["dark"],"198":["dark","flying"],"199":["water","psychic"],"200":["ghost"],"201":["psychic"],"202":["psychic"],"203":["normal","psychic"],"204":["bug"],"205":["bug","steel"],"206":["normal"],"207":["ground","flying"],"208":["steel","ground"],"209":["fairy"],"210":["normal","fairy"],"211":["water","poison"],"212":["bug","steel"],"213":["bug","rock"],"214":["bug","fighting"],"215":["dark","ice"],"216":["normal"],"217":["normal"],"218":["fire"],"219":["fire","rock"],"220":["ice","ground"],"221":["ice","ground"],"222":["water","rock"],"223":["water"],"224":["water"],"225":["ice","flying"],"226":["water","flying"],"227":["steel","flying"],"228":["dark","fire"],"229":["dark","fire"],"230":["water","dragon"],"231":["ground"],"232":["ground"],"233":["normal"],"234":["normal"],"235":["normal"],"236":["fighting"],"237":["fighting"],"238":["ice","psychic"],"239":["electric"],"240":["fire"],"241":["normal"],"242":["normal"],"243":["electric"],"244":["fire"],"245":["water"],"246":["rock","ground"],"247":["rock","ground"],"248":["rock","dark"],"249":["water","flying"],"250":["fire","flying"],"251":["psychic","grass"]};
+function getTypes(id){
+  const k=String(id);
+  if(G1T[k])return G1T[k];
+  if(G2T[k])return G2T[k];
+  let h=(id*2654435761)>>>0;
+  const t1=h%18;
+  const h2=(h^(h>>>16))*0x45d9f3b>>>0;
+  if(h2%3===0)return[TYPES[t1]];
+  let t2=h2%17;if(t2>=t1)t2++;
+  return[TYPES[t1],TYPES[t2]];
+}
+function getName(id){
+  if(id>=1&&id<=151)return G1N[id-1];
+  if(G2N[id])return G2N[id];
+  const pf=["Azu","Blaz","Chim","Dusk","Embo","Flux","Gard","Hax","Infern","Jolt","Keld","Luxr","Metag","Noiv","Pyro","Quag","Swamp","Tyran","Umbr","Volcar","Weavil","Xern","Yvel","Zygar"];
+  const sf=["aur","ite","eon","ath","ock","uzz","owl","amp","ini","ion","ax","us","mon","oir","ard","tle","os","ix","oc","or","el","ar"];
+  return pf[(id*7)%pf.length]+sf[(id*13)%sf.length];
+}
+function getStats(id){return{maxHP:50+((id*13)%70),attack:40+((id*7)%80),defense:35+((id*11)%75)};}
+
+// ── EVOLUTIONS ────────────────────────────────────────────────
+const EVOS={1:[2,16],2:[3,32],4:[5,16],5:[6,36],7:[8,16],8:[9,36],10:[11,7],11:[12,10],13:[14,7],14:[15,10],16:[17,18],17:[18,36],19:[20,20],21:[22,20],23:[24,22],25:[26,22],27:[28,22],29:[30,16],30:[31,36],32:[33,16],33:[34,36],37:[38,29],39:[40,12],41:[42,22],43:[44,21],44:[45,34],46:[47,24],48:[49,31],50:[51,26],52:[53,28],54:[55,33],56:[57,28],58:[59,28],60:[61,25],61:[62,36],63:[64,16],64:[65,36],66:[67,28],67:[68,36],69:[70,21],70:[71,34],72:[73,30],74:[75,25],75:[76,36],77:[78,40],79:[80,37],81:[82,30],84:[85,31],86:[87,34],88:[89,38],90:[91,50],92:[93,25],93:[94,36],96:[97,26],98:[99,28],100:[101,30],102:[103,28],104:[105,28],109:[110,35],111:[112,42],116:[117,32],118:[119,33],129:[130,20],138:[139,40],140:[141,40],147:[148,30],148:[149,55],152:[153,16],153:[154,32],155:[156,14],156:[157,36],158:[159,18],159:[160,30],161:[162,15],163:[164,20],165:[166,18],167:[168,22],170:[171,27],172:[25,22],175:[176,25],177:[178,25],179:[180,15],180:[181,30],183:[184,18],187:[188,18],188:[189,27],191:[192,25],194:[195,20],204:[205,31],209:[210,23],216:[217,30],218:[219,38],220:[221,33],223:[224,25],231:[232,25],246:[247,30],247:[248,55]};
+
+// ── XP & LEVELS ───────────────────────────────────────────────
+function xpForLevel(lv){return Math.floor(Math.pow(lv,3)*0.8);}
+function levelFromXP(xp){let lv=1;while(lv<100&&xpForLevel(lv+1)<=xp)lv++;return lv;}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function calcDmg(a,d){
+  const e=tEff(a.types,d.types);
+  const b=Math.floor((a.attack/(d.defense*0.5+25))*45*(0.85+Math.random()*0.15));
+  return{dmg:Math.max(1,Math.floor(b*e)),eff:e};
+}
+function hpCol(p){return p>0.5?"#4CAF50":p>0.2?"#FFC107":"#F44336";}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function hpBar(cur,max,fw){
+  const p=Math.max(0,Math.min(1,cur/max));
+  return`<div style="display:flex;align-items:center;gap:6px"><div class="hpt"${fw?` style="flex:0 0 ${fw};width:${fw}"`:""}><div style="height:100%;width:${Math.round(p*100)}%;background:${hpCol(p)};transition:width .35s;border-radius:4px"></div></div><span style="font-size:12px;color:#aaa;white-space:nowrap">${Math.max(0,cur)}/${max}</span></div>`;
+}
+function xpBar(p){
+  const lv=p.level||1;if(lv>=100)return"";
+  const xp=p.xp||0,cur=xp-xpForLevel(lv),need=xpForLevel(lv+1)-xpForLevel(lv);
+  const pct=Math.round(Math.min(100,cur/need*100));
+  return`<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><div class="hpt"><div style="height:100%;width:${pct}%;background:#D9B921;border-radius:4px"></div></div><span style="font-size:10px;color:#888;white-space:nowrap">XP ${cur}/${need}</span></div>`;
+}
+function badges(types){return(types||[]).map(t=>`<span class="badge" style="background:${TCOLOR[TYPES.indexOf(t)]||"#888"}">${t[0].toUpperCase()+t.slice(1)}</span>`).join(" ");}
+function lvbadge(lv){return`<span style="font-size:11px;color:#D9B921;font-weight:600">Lv.${lv||1}</span>`;}
+function spr(id){return`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;}
+function art(id){return`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/other/official-artwork/${id}.png`;}
+function img(id,sz,useArt){
+  const main=useArt?art(id):spr(id), fb=spr(id);
+  return`<img src="${main}" style="width:${sz}px;height:${sz}px;object-fit:contain" onerror="this.src='${fb}';this.onerror=null;" loading="lazy">`;
+}
+
+// ── STARTERS ──────────────────────────────────────────────────
+const STARTERS=[
+  {id:1,name:"Bulbasaur",types:["grass","poison"],maxHP:85,attack:49,defense:49},
+  {id:4,name:"Charmander",types:["fire"],maxHP:79,attack:52,defense:43},
+  {id:7,name:"Squirtle",types:["water"],maxHP:84,attack:48,defense:65},
+];
+const TOTAL=1025;
+
+// ── SAVE ──────────────────────────────────────────────────────
+let USER=null;
+function sk(k){return"pk_"+USER+"_"+k;}
+function sv(k,v){try{localStorage.setItem(sk(k),JSON.stringify(v));}catch{}}
+function ld(k,d){try{const v=localStorage.getItem(sk(k));return v!=null?JSON.parse(v):d;}catch{return d;}}
+function getUsers(){try{return JSON.parse(localStorage.getItem("pk_users")||"[]");}catch{return[];}}
+function setUsers(u){try{localStorage.setItem("pk_users",JSON.stringify(u));}catch{}}
+function delUser(name){["party","caught","seen","balls"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
+function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("balls",S.balls);}
+
+// ── STATE ─────────────────────────────────────────────────────
+const S={
+  screen:"users",
+  party:[],caught:[],seen:[],balls:20,
+  wild:null,wildHP:0,playerHP:0,
+  log:[],bState:"active",busy:false,
+  pendingEvo:null,levelUpData:null,
+  switchCtx:"hub", // "hub" | "battle" | "faint"
+};
+function addLog(m){S.log=[...S.log.slice(-30),m];}
+
+function buildWild(id){
+  const st=getStats(id);
+  return{id,name:getName(id),types:getTypes(id),maxHP:st.maxHP,attack:st.attack,defense:st.defense,level:Math.floor(Math.random()*25)+3};
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  try{
+    const map={users:sUsers,title:sTitle,starter:sStarter,hub:sHub,battle:sBattle,party:sParty,dex:sDex,shop:sShop,levelup:sLevelUp,switch:sSwitch};
+    document.getElementById("app").innerHTML=(map[S.screen]||sUsers)();
+  }catch(e){
+    document.getElementById("app").innerHTML=`<div class="scr"><p style="color:#F44336">Error: ${e.message}</p><button onclick="S.screen='hub';render()">Go to hub</button></div>`;
+  }
+  bind();
+  const lb=document.getElementById("lb");if(lb)lb.scrollTop=lb.scrollHeight;
+}
+
+// ── SCREENS ───────────────────────────────────────────────────
+function sUsers(){
+  const users=getUsers();
+  const icons=["🧢","🎀","🌟","🔥","💎","🌸","⚡","🌊"];
+  return`<div class="fi scr" style="padding-top:1.5rem">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:52px">⚡</div>
+      <h1 style="font-size:26px;font-weight:700;margin:4px 0 2px">Pokémon</h1>
+      <p style="color:#aaa;font-size:13px">Who's playing?</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem">
+      ${users.length===0?`<p style="text-align:center;color:#666;font-size:13px">No profiles yet — add one below!</p>`:""}
+      ${users.map((u,i)=>`
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="pu${i}" data-user="${u}" style="flex:1;display:flex;align-items:center;gap:12px;background:#2a2a3e;border:1px solid #444;border-radius:10px;padding:0.75rem 1rem;cursor:pointer;transition:all 0.12s"
+            onmouseenter="this.style.borderColor='#888';this.style.background='#3a3a5e'"
+            onmouseleave="this.style.borderColor='#444';this.style.background='#2a2a3e'">
+            <span style="font-size:26px">${icons[i%icons.length]}</span>
+            <div>
+              <div style="font-weight:600;font-size:15px">${u}</div>
+              <div style="font-size:11px;color:#aaa">${(()=>{try{return(JSON.parse(localStorage.getItem("pk_"+u+"_caught")||"[]")).length+" caught";}catch{return"0 caught";}})()}</div>
+            </div>
+          </div>
+          <button class="delu" data-user="${u}" style="width:38px;padding:0.5rem;font-size:16px;color:#F44336;border-color:#F44336;background:transparent;flex-shrink:0">🗑️</button>
+        </div>`).join("")}
+    </div>
+    <div style="border-top:1px solid #333;padding-top:1.25rem">
+      <p style="font-size:13px;color:#aaa;margin-bottom:0.75rem;text-align:center">Add new player</p>
+      <div style="display:flex;gap:8px">
+        <input id="ni" type="text" maxlength="16" placeholder="Enter your name..." style="flex:1;width:auto">
+        <button id="badduser" style="width:auto;padding:0.6rem 1rem;font-weight:600;white-space:nowrap">Add ➕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sTitle(){
+  return`<div class="fi scr" style="text-align:center;padding-top:2rem">
+    <div style="font-size:54px;margin-bottom:0.5rem">⚡</div>
+    <h1 style="font-size:28px;font-weight:700;margin-bottom:4px">Pokémon</h1>
+    <p style="color:#aaa;font-size:13px;margin-bottom:0.5rem">Playing as <strong>${USER}</strong></p>
+    <p style="color:#aaa;font-size:13px;margin-bottom:2rem">All ${TOTAL.toLocaleString()} Pokémon await!</p>
+    <button id="bnew" style="font-size:16px;padding:0.9rem;margin-bottom:0.5rem">🎮 New Game</button>
+    <button id="bswitch" style="background:transparent;border-color:#444;color:#aaa;font-size:13px;padding:0.5rem">← Switch player</button>
+  </div>`;
+}
+
+function sStarter(){
+  return`<div class="fi scr">
+    <h2 style="margin-bottom:4px">Choose your starter!</h2>
+    <p style="color:#aaa;font-size:13px;margin-bottom:1.25rem">Pick your first partner</p>
+    <div class="g3">${STARTERS.map(p=>`
+      <div id="st${p.id}" style="background:#2a2a3e;border:1px solid #444;border-radius:12px;padding:1rem 0.75rem;cursor:pointer;text-align:center;transition:all 0.15s"
+        onmouseenter="this.style.borderColor='#888';this.style.background='#3a3a5e'"
+        onmouseleave="this.style.borderColor='#444';this.style.background='#2a2a3e'">
+        ${img(p.id,76,false)}
+        <div style="font-weight:600;font-size:13px;margin:5px 0">${p.name}</div>
+        <div>${badges(p.types)}</div>
+        <div style="margin-top:8px;font-size:11px;color:#aaa">HP ${p.maxHP-40} · ATK ${p.attack}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+function sHub(){
+  const L=S.party[0];
+  if(!L)return`<div class="scr"><p>No party!</p></div>`;
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+      <span style="font-size:13px;color:#aaa">👤 <strong style="color:#eee">${USER}</strong></span>
+      <span style="font-size:12px;color:#aaa">🎯 ${S.balls} balls</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      ${[["Caught",S.caught.length],["Seen",S.seen.length],["Party",S.party.length+"/6"]].map(([l,v])=>`<div class="stat"><div style="font-size:19px;font-weight:600">${v}</div><div style="font-size:11px;color:#aaa">${l}</div></div>`).join("")}
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:12px">
+      <div class="bob">${img(L.id,84,false)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+          <span style="font-weight:700;font-size:16px">${L.name}</span>
+          ${lvbadge(L.level)}
+          <span style="font-size:11px;color:#555">#${String(L.id).padStart(4,"0")}</span>
+        </div>
+        <div style="margin-bottom:7px">${badges(L.types)}</div>
+        ${hpBar(L.currentHP,L.maxHP)}
+        ${xpBar(L)}
+        ${L.currentHP<=0?`<div style="font-size:11px;color:#F44336;margin-top:4px">⚠️ Fainted — heal first!</div>`:""}
+      </div>
+    </div>
+    <div style="height:0.75rem"></div>
+    <div class="g2">
+      <button id="bexplore" ${L.currentHP<=0?"disabled":""}>⚔️ Explore</button>
+      <button id="bheal">💊 Heal all</button>
+    </div>
+    <div class="g3">
+      <button id="bchooseLead">🔄 Switch Lead</button>
+      <button id="bparty">👥 Party</button>
+      <button id="bdex">📖 Pokédex</button>
+    </div>
+    <div class="g2">
+      <button id="bshop">🛒 Shop</button>
+      <button id="bswitchuser" style="background:transparent;border-color:#333;color:#888;font-size:12px">👤 Switch user</button>
+    </div>
+    <button id="breset" style="background:transparent;border-color:transparent;color:#555;font-size:12px;padding:0.4rem;margin-top:2px">Reset save</button>
+  </div>`;
+}
+
+function sBattle(){
+  const pl=S.party[0],w=S.wild;
+  if(!w||!pl)return sHub();
+  const done=S.bState!=="active";
+  const stateColor={won:"#4CAF50",caught:"#4CAF50",ran:"#aaa",fainted:"#F44336"};
+  const stateMsg={won:"Victory! 🎉",caught:`${w.name} caught! 🎉`,ran:"Got away safely! 🏃",fainted:"All Pokémon fainted! 😢"};
+  const notCaught=!S.caught.includes(w.id);
+  const hasRoom=S.party.length<6;
+  const hasBalls=S.balls>0;
+  const canSwitch=S.party.filter(p=>p.currentHP>0).length>1;
+  return`<div class="fi scr">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+          <span style="font-weight:700">Wild ${w.name}</span>
+          ${lvbadge(w.level)}
+          <span style="font-size:11px;color:#555">#${String(w.id).padStart(4,"0")}</span>
+        </div>
+        <div style="margin-bottom:7px">${badges(w.types)}</div>
+        ${hpBar(S.wildHP,w.maxHP,"155px")}
+      </div>
+      ${img(w.id,88,true)}
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:12px">
+      ${img(pl.id,60,false)}
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span style="font-weight:600">${pl.name}</span>${lvbadge(pl.level)}
+        </div>
+        ${hpBar(S.playerHP,pl.maxHP)}
+      </div>
+    </div>
+    <div class="logb" id="lb">${S.log.map(l=>`<p>${l}</p>`).join("")}</div>
+    ${done?`
+      <div style="text-align:center;padding:0.5rem 0">
+        <div style="font-size:15px;font-weight:700;color:${stateColor[S.bState]||"#eee"};margin-bottom:0.75rem">${stateMsg[S.bState]||""}</div>
+        ${S.bState==="won"&&notCaught&&hasRoom&&hasBalls?`
+          <div class="card" style="background:#1f2a1a;border-color:#D9B921;text-align:left;margin-bottom:0.75rem">
+            <div style="font-size:13px;color:#D9B921;font-weight:600;margin-bottom:0.5rem">🎯 ${w.name} is knocked out — catch it now? (${S.balls} ball${S.balls!==1?"s":""})</div>
+            <button id="bcatchfainted" style="background:#1a2a1a;border-color:#D9B921;color:#D9B921;font-weight:600">Catch ${w.name}!</button>
+          </div>`:
+          S.bState==="won"&&!notCaught?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Already in your Pokédex ✓</p>`:
+          S.bState==="won"&&!hasRoom?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Party is full (release one to catch more)</p>`:""}
+        ${S.pendingEvo?`
+          <div class="card" style="background:#1a2a1a;border-color:#4CAF50;text-align:left;margin-bottom:0.75rem">
+            <div style="font-weight:600;color:#4CAF50;margin-bottom:0.5rem">✨ ${S.pendingEvo.fromName} wants to evolve into ${getName(S.pendingEvo.toId)}!</div>
+            <div class="g2" style="margin-bottom:0">
+              <button id="bevolve" style="background:#1a3a1a;border-color:#4CAF50;color:#4CAF50;font-weight:600">Evolve ✓</button>
+              <button id="bcancelevo" style="color:#aaa;border-color:#555">Cancel ✗</button>
+            </div>
+          </div>`:""}
+        <button id="bhub" style="padding:0.75rem 2rem;width:auto;display:inline-block">← Back to hub</button>
+      </div>`:`
+      <div class="g3">
+        <button id="batk" ${S.busy?"disabled":""}>⚔️ Attack</button>
+        <button id="bcatch" ${S.busy||!hasBalls?"disabled":""}>🎯 Catch (${S.balls})</button>
+        <button id="brun" ${S.busy?"disabled":""}>🏃 Run</button>
+      </div>
+      <button id="bswitchbattle" ${S.busy||!canSwitch?"disabled":""} style="margin-top:0">🔄 Switch Pokémon</button>`}
+  </div>`;
+}
+
+function sParty(){
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
+      <h2 style="margin:0">Your Party</h2>
+    </div>
+    ${S.party.map((p,i)=>`
+      <div class="card" style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;color:#aaa;width:14px">${i+1}</span>
+        <div style="opacity:${p.currentHP<=0?0.35:1}">${img(p.id,52,false)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+            <span style="font-weight:600">${p.name}</span>${lvbadge(p.level)}
+            ${p.currentHP<=0?`<span style="font-size:10px;color:#F44336;font-weight:700">FAINTED</span>`:""}
+          </div>
+          <div style="margin-bottom:5px">${badges(p.types)}</div>
+          ${hpBar(p.currentHP,p.maxHP)}
+          ${xpBar(p)}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div style="font-size:11px;color:#aaa;text-align:right;line-height:2">ATK ${p.attack}<br>DEF ${p.defense}</div>
+          ${S.party.length>1?`<button class="relbtn" data-idx="${i}" style="width:auto;padding:2px 8px;font-size:11px;color:#F44336;border-color:#F44336;background:transparent">Release</button>`:""}
+        </div>
+      </div>`).join("")}
+    <button id="bheal" style="margin-top:4px">💊 Heal all</button>
+  </div>`;
+}
+
+function sDex(){
+  const cs=new Set(S.caught),ss=new Set(S.seen);
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.75rem">
+      <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
+      <div><h2 style="margin:0">Pokédex</h2>
+        <div style="font-size:12px;color:#aaa">${S.caught.length} caught · ${S.seen.length} seen · ${TOTAL} total</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:12px;color:#aaa;margin-bottom:0.75rem">
+      <span><span style="display:inline-block;width:10px;height:10px;background:#1a3a5c;border:1px solid #4af;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Caught</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:#2a2a3e;border:1px solid #444;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Seen</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:2px;max-height:420px;overflow-y:auto">
+      ${Array.from({length:TOTAL},(_,i)=>i+1).map(id=>{
+        const c=cs.has(id),s=ss.has(id);
+        return`<div title="${getName(id)} #${id}${c?" ✓":""}" style="aspect-ratio:1;border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:600;background:${c?"#1a3a5c":s?"#2a2a3e":"#111"};color:${c?"#4af":s?"#555":"transparent"};border:1px solid ${c?"#4af":s?"#333":"transparent"}">${c||s?id:""}</div>`;
+      }).join("")}
+    </div>
+  </div>`;
+}
+
+function sShop(){
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
+      <div><h2 style="margin:0">Shop</h2>
+        <div style="font-size:12px;color:#aaa">You have ${S.balls} ball${S.balls!==1?"s":""}</div>
+      </div>
+    </div>
+    <div class="card" style="border-color:#4CAF5066;margin-bottom:0.75rem">
+      <div style="font-size:13px;color:#aaa">💡 Win battles to earn <strong style="color:#eee">+1 ball</strong> each time!</div>
+    </div>
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+      <div><div style="font-weight:600;margin-bottom:2px">🎯 +3 Pokéballs</div><div style="font-size:12px;color:#aaa">Forage the tall grass</div></div>
+      <button id="bget3" style="width:auto;padding:0.5rem 1rem;background:#1a3a1a;border-color:#4CAF50;color:#4CAF50;font-weight:600">Get</button>
+    </div>
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-weight:600;margin-bottom:2px">🎒 +10 Pokéballs</div><div style="font-size:12px;color:#aaa">Visit the Pokémon Centre</div></div>
+      <button id="bget10" style="width:auto;padding:0.5rem 1rem;background:#1a2a3a;border-color:#4F8FD1;color:#4F8FD1;font-weight:600">Get</button>
+    </div>
+  </div>`;
+}
+
+function sLevelUp(){
+  const d=S.levelUpData;
+  if(!d){S.screen="hub";return sHub();}
+  return`<div class="fi scr" style="text-align:center;padding-top:1.5rem">
+    <div style="font-size:48px;margin-bottom:0.5rem">⬆️</div>
+    <h2 style="font-size:22px;font-weight:700;color:#D9B921;margin-bottom:4px">${d.name} grew!</h2>
+    <div style="font-size:32px;font-weight:800;margin-bottom:0.5rem">Lv.${d.oldLv} → Lv.${d.newLv}</div>
+    <div style="margin:0.5rem auto 1rem">${badges(d.types)}</div>
+    <div class="card" style="text-align:left;margin-bottom:0.75rem">
+      <div style="font-size:12px;color:#aaa;margin-bottom:0.75rem;font-weight:600">STAT INCREASES</div>
+      ${[["❤️ HP",d.oHP,d.nHP],["⚔️ Attack",d.oAtk,d.nAtk],["🛡️ Defense",d.oDef,d.nDef]].map(([l,o,n])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:14px">${l}</span>
+          <span style="font-size:14px">${o} <span style="color:#4CAF50;font-weight:700">→ ${n} (+${n-o})</span></span>
+        </div>`).join("")}
+    </div>
+    ${S.pendingEvo?`
+      <div class="card" style="background:#1a2a1a;border-color:#4CAF50;text-align:left;margin-bottom:0.75rem">
+        <div style="font-weight:600;color:#4CAF50;margin-bottom:0.5rem">✨ ${S.pendingEvo.fromName} wants to evolve into ${getName(S.pendingEvo.toId)}!</div>
+        <div class="g2" style="margin-bottom:0">
+          <button id="bevolve" style="background:#1a3a1a;border-color:#4CAF50;color:#4CAF50;font-weight:600">Evolve ✓</button>
+          <button id="bcancelevo" style="color:#aaa;border-color:#555">Cancel ✗</button>
+        </div>
+      </div>`:""}
+    <button id="bhub" style="padding:0.85rem;font-size:15px;font-weight:600">Continue →</button>
+  </div>`;
+}
+
+function sSwitch(){
+  const forced=S.switchCtx==="faint";
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      ${forced?`<div style="font-size:22px">💀</div>`:`<button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>`}
+      <div>
+        <h2 style="margin:0">${forced?"Pokémon fainted!":"Choose Pokémon"}</h2>
+        <div style="font-size:12px;color:${forced?"#F44336":"#aaa"}">${forced?"Send out your next Pokémon!":S.switchCtx==="battle"?"Pick who fights next (wild gets a hit)":"Pick your lead"}</div>
+      </div>
+    </div>
+    ${S.party.map((p,i)=>{
+      const isLead=i===0,fainted=p.currentHP<=0,disabled=fainted||(S.switchCtx!=="faint"&&isLead);
+      return`<div class="card" style="display:flex;align-items:center;gap:12px;opacity:${fainted?0.4:1};border-color:${isLead&&S.switchCtx!=="faint"?"#D9B921":"#3a3a5e"}">
+        ${img(p.id,52,false)}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+            <span style="font-weight:600">${p.name}</span>${lvbadge(p.level)}
+            ${isLead&&S.switchCtx!=="faint"?`<span style="font-size:10px;color:#D9B921;font-weight:700">LEAD</span>`:""}
+            ${fainted?`<span style="font-size:10px;color:#F44336;font-weight:700">FAINTED</span>`:""}
+          </div>
+          <div style="margin-bottom:5px">${badges(p.types)}</div>
+          ${hpBar(p.currentHP,p.maxHP)}
+        </div>
+        ${!disabled?`<button class="swbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:#1a2a3a;border-color:#4F8FD1;color:#4F8FD1">Send out</button>`:`<div style="width:74px"></div>`}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────
+function doExplore(){
+  const id=Math.floor(Math.random()*TOTAL)+1;
+  const w=buildWild(id);
+  if(!S.seen.includes(id)){S.seen.push(id);sv("seen",S.seen);}
+  S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;
+  addLog(`⚡ A wild ${w.name} appeared!`);
+  const e=tEff(S.party[0].types,w.types);
+  if(e>=2)addLog("✨ Your type is super effective!");
+  else if(e>0&&e<1)addLog("😬 Its type resists yours...");
+  S.bState="active";S.screen="battle";render();
+}
+
+function checkFaint(){
+  // Returns true if handled (switched or ended), false if battle continues
+  if(S.playerHP>0)return false;
+  S.party[0]={...S.party[0],currentHP:0};
+  addLog(`😢 ${S.party[0].name} fainted!`);
+  const alive=S.party.filter(p=>p.currentHP>0);
+  if(alive.length>0){
+    addLog("Choose your next Pokémon!");
+    saveAll();S.switchCtx="faint";S.screen="switch";
+    return true;
+  }
+  S.bState="fainted";saveAll();
+  return true;
+}
+
+async function doAtk(){
+  if(S.busy||S.bState!=="active")return;
+  S.busy=true;render();
+  const pl=S.party[0];
+  const{dmg,eff}=calcDmg(pl,S.wild);
+  S.wildHP=Math.max(0,S.wildHP-dmg);
+  addLog(`⚔️ ${pl.name} dealt ${dmg} dmg!${eff>=2?" Super effective!":eff>0&&eff<1?" Not very effective...":eff===0?" No effect!":""}`);
+  if(S.wildHP<=0){
+    // Win!
+    S.balls++;
+    const gained=Math.floor((S.wild.level||5)*15*(0.8+Math.random()*0.4));
+    let p={...S.party[0],currentHP:S.playerHP};
+    p.xp=(p.xp||0)+gained;
+    const oldLv=p.level||1;
+    p.level=levelFromXP(p.xp);
+    addLog(`💀 Wild ${S.wild.name} fainted! +${gained} XP (+1 ball)`);
+    if(p.level>oldLv){
+      const ns=getStats(p.id);
+      const nHP=Math.min(p.maxHP+Math.floor((p.level-oldLv)*2.5), ns.maxHP+30);
+      const nAtk=p.attack+Math.floor((p.level-oldLv)*1.5);
+      const nDef=p.defense+Math.floor((p.level-oldLv)*1.2);
+      S.levelUpData={name:p.name,types:p.types,id:p.id,oldLv,newLv:p.level,oHP:p.maxHP,nHP,oAtk:p.attack,nAtk,oDef:p.defense,nDef};
+      p.maxHP=nHP;p.attack=nAtk;p.defense=nDef;
+      p.currentHP=Math.min(p.currentHP,nHP);
+      const evo=EVOS[p.id];
+      if(evo&&p.level>=evo[1])S.pendingEvo={fromName:p.name,toId:evo[0]};
+    }
+    S.party[0]=p;S.bState="won";saveAll();S.busy=false;
+    if(S.levelUpData){S.screen="levelup";}
+    render();return;
+  }
+  render();await delay(480);
+  const{dmg:wd,eff:we}=calcDmg(S.wild,pl);
+  S.playerHP=Math.max(0,S.playerHP-wd);
+  addLog(`💥 Wild ${S.wild.name} dealt ${wd} dmg!${we>=2?" Super effective!":we>0&&we<1?" Not very effective...":""}`);
+  S.busy=false;
+  if(checkFaint()){render();return;}
+  render();
+}
+
+async function doCatch(){
+  if(S.busy||S.bState!=="active"||S.balls<=0)return;
+  S.busy=true;S.balls--;
+  addLog(`🎯 Threw a Pokéball! (${S.balls} left)`);render();
+  await delay(700);
+  const chance=Math.min(0.93,(1-(S.wildHP/S.wild.maxHP)*0.6)*0.75);
+  if(Math.random()<chance){
+    addLog(`🎉 Gotcha! ${S.wild.name} was caught!`);S.bState="caught";
+    if(!S.caught.includes(S.wild.id))S.caught.push(S.wild.id);
+    if(!S.seen.includes(S.wild.id))S.seen.push(S.wild.id);
+    if(S.party.length<6)S.party.push({...S.wild,currentHP:S.wildHP,xp:0,level:S.wild.level||5});
+    S.party[0]={...S.party[0],currentHP:S.playerHP};
+    saveAll();S.busy=false;render();return;
+  }
+  addLog(`💨 ${S.wild.name} broke free!`);
+  await delay(280);
+  const{dmg}=calcDmg(S.wild,S.party[0]);
+  S.playerHP=Math.max(0,S.playerHP-Math.max(1,Math.floor(dmg*0.5)));
+  addLog(`💥 ${S.wild.name} attacks for ${Math.max(1,Math.floor(dmg*0.5))} dmg!`);
+  sv("balls",S.balls);
+  S.busy=false;
+  if(checkFaint()){render();return;}
+  render();
+}
+
+async function doRun(){
+  if(S.busy||S.bState!=="active")return;
+  S.busy=true;render();await delay(280);
+  if(Math.random()>0.3){
+    addLog("🏃 Got away safely!");S.bState="ran";
+    S.party[0]={...S.party[0],currentHP:S.playerHP};sv("party",S.party);
+    S.busy=false;render();return;
+  }
+  addLog("❌ Can't escape!");
+  const{dmg}=calcDmg(S.wild,S.party[0]);
+  S.playerHP=Math.max(0,S.playerHP-dmg);
+  addLog(`💥 ${S.wild.name} attacks for ${dmg} dmg!`);
+  S.busy=false;
+  if(checkFaint()){render();return;}
+  render();
+}
+
+function doHeal(){
+  S.party=S.party.map(p=>({...p,currentHP:p.maxHP}));
+  sv("party",S.party);render();
+}
+
+function doEvolve(){
+  if(!S.pendingEvo)return;
+  const{toId,fromName}=S.pendingEvo;
+  const st=getStats(toId);
+  const pl=S.party[0];
+  S.party[0]={...pl,id:toId,name:getName(toId),types:getTypes(toId),maxHP:st.maxHP+25,attack:Math.floor(pl.attack*1.2),defense:Math.floor(pl.defense*1.15),currentHP:Math.min(pl.currentHP,st.maxHP+25)};
+  addLog(`🎊 ${fromName} evolved into ${S.party[0].name}!`);
+  S.pendingEvo=null;S.levelUpData=null;saveAll();S.screen="hub";render();
+}
+
+function doSwitch(idx){
+  // Swap chosen to index 0
+  const tmp=S.party[0];S.party[0]=S.party[idx];S.party[idx]=tmp;
+  if(S.switchCtx==="faint"){
+    // Free switch after faint
+    S.playerHP=S.party[0].currentHP;
+    addLog(`🔄 Go, ${S.party[0].name}!`);
+    saveAll();S.screen="battle";render();
+  } else if(S.switchCtx==="battle"){
+    // Wild gets a free hit for switching
+    const{dmg}=calcDmg(S.wild,S.party[0]);
+    S.playerHP=Math.max(0,S.party[0].currentHP-dmg);
+    addLog(`🔄 Go, ${S.party[0].name}!`);
+    addLog(`💥 Wild ${S.wild.name} attacks for ${dmg} dmg!`);
+    if(checkFaint()){render();return;}
+    S.party[0]={...S.party[0],currentHP:S.playerHP};
+    saveAll();S.screen="battle";render();
+  } else {
+    addLog(`🔄 ${S.party[0].name} is now your lead!`);
+    saveAll();S.screen="hub";render();
+  }
+}
+
+// ── EVENTS ────────────────────────────────────────────────────
+function bind(){
+  const on=(id,fn)=>{const e=document.getElementById(id);if(e)e.addEventListener("click",fn);};
+
+  // Users screen
+  document.querySelectorAll("[id^='pu']").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const u=el.dataset.user;USER=u;
+      S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);S.balls=ld("balls",20);
+      S.screen=S.party.length>0?"hub":"title";render();
+    });
+  });
+  document.querySelectorAll(".delu").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(!confirm("Delete "+btn.dataset.user+"'s save?"))return;
+      delUser(btn.dataset.user);render();
+    });
+  });
+  const ni=document.getElementById("ni");
+  const addUser=()=>{
+    const name=(ni?.value||"").trim();if(!name)return;
+    const users=getUsers();
+    if(users.includes(name)){alert("Name already taken!");return;}
+    users.push(name);setUsers(users);
+    USER=name;S.party=[];S.caught=[];S.seen=[];S.balls=20;
+    S.screen="title";render();
+  };
+  on("badduser",addUser);
+  if(ni)ni.addEventListener("keydown",e=>{if(e.key==="Enter")addUser();});
+
+  // Nav
+  on("bnew",()=>{S.screen="starter";render();});
+  on("bhub",()=>{S.levelUpData=null;S.screen="hub";render();});
+  on("bswitch",()=>{S.screen="users";render();});
+  on("bswitchuser",()=>{S.screen="users";render();});
+  on("bparty",()=>{S.screen="party";render();});
+  on("bdex",()=>{S.screen="dex";render();});
+  on("bshop",()=>{S.screen="shop";render();});
+  on("bchooseLead",()=>{S.switchCtx="hub";S.screen="switch";render();});
+  on("bswitchbattle",()=>{S.switchCtx="battle";S.screen="switch";render();});
+
+  // Starters
+  STARTERS.forEach(p=>{
+    on("st"+p.id,()=>{
+      S.party=[{...p,currentHP:p.maxHP,level:5,xp:0}];
+      S.caught=[p.id];S.seen=[p.id];saveAll();S.screen="hub";render();
+    });
+  });
+
+  // Battle
+  on("batk",doAtk);
+  on("bcatch",doCatch);
+  on("brun",doRun);
+  on("bheal",doHeal);
+
+  // Catch fainted wild
+  on("bcatchfainted",()=>{
+    if(!S.wild||S.balls<=0)return;
+    S.balls--;
+    if(!S.caught.includes(S.wild.id))S.caught.push(S.wild.id);
+    if(!S.seen.includes(S.wild.id))S.seen.push(S.wild.id);
+    if(S.party.length<6)S.party.push({...S.wild,currentHP:0,xp:0,level:S.wild.level||5});
+    addLog(`🎉 Caught ${S.wild.name}! (Heal before battle)`);
+    saveAll();render();
+  });
+
+  // Evolve
+  on("bevolve",doEvolve);
+  on("bcancelevo",()=>{
+    if(S.pendingEvo)addLog(`❌ ${S.pendingEvo.fromName} did not evolve.`);
+    S.pendingEvo=null;S.levelUpData=null;S.screen="hub";render();
+  });
+
+  // Switch
+  document.querySelectorAll(".swbtn").forEach(btn=>{
+    btn.addEventListener("click",()=>doSwitch(parseInt(btn.dataset.idx)));
+  });
+
+  // Party release
+  document.querySelectorAll(".relbtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const i=parseInt(btn.dataset.idx);
+      if(!confirm("Release "+S.party[i].name+"?"))return;
+      S.party.splice(i,1);sv("party",S.party);render();
+    });
+  });
+
+  // Shop
+  on("bget3",()=>{S.balls+=3;sv("balls",S.balls);render();});
+  on("bget10",()=>{S.balls+=10;sv("balls",S.balls);render();});
+
+  // Reset
+  on("breset",()=>{
+    if(!confirm("Reset "+USER+"'s save?"))return;
+    S.party=[];S.caught=[];S.seen=[];S.balls=20;saveAll();S.screen="title";render();
+  });
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+render();
+</script>
+
+
+</body></html>
