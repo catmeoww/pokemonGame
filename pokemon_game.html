@@ -396,8 +396,11 @@ function sBattle(){
           <div class="g3">
             ${Object.entries(ITEMS).map(([k,it])=>{
               const cnt=k==="potion"?S.potions:k==="superPotion"?S.superPotions:S.revives;
-              const disabled=S.busy||cnt<=0||(k!=="revive"&&S.playerHP>=pl.maxHP);
-              return`<button class="bagitem" data-key="${k}" ${disabled?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem">${it.emoji} ${it.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
+              const noStock=cnt<=0;
+              const atFull=k!=="revive"&&S.playerHP>=pl.maxHP;
+              const disabled=S.busy||noStock;
+              const hint=noStock?"Out of stock":atFull?"HP full":"";
+              return`<button class="bagitem" data-key="${k}" ${disabled?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem;${atFull&&!noStock?"opacity:0.7":""}">${it.emoji} ${it.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}${hint?` · ${hint}`:""}</span></button>`;
             }).join("")}
           </div>
         </div>`:`
@@ -708,15 +711,13 @@ async function doCatch(ballKey){
 async function doUseItem(key){
   const it=ITEMS[key];if(!it)return;
   const stockField=key==="potion"?"potions":key==="superPotion"?"superPotions":"revives";
-  if(S[stockField]<=0)return;
+  if(S[stockField]<=0){addLog(`❌ No ${it.name}s left — buy some in the shop.`);render();return;}
   if(it.revive){
-    // Switch to revive picker screen
     S.bagOpen=false;S.screen="revive";render();return;
   }
-  // Heal
   if(S.busy||S.bState!=="active")return;
   const pl=S.party[0];
-  if(S.playerHP>=pl.maxHP)return;
+  if(S.playerHP>=pl.maxHP){addLog(`💚 ${pl.name} is already at full HP.`);render();return;}
   S.busy=true;S[stockField]--;S.bagOpen=false;
   const before=S.playerHP;
   S.playerHP=Math.min(pl.maxHP,S.playerHP+it.heal);
