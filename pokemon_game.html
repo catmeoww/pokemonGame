@@ -443,23 +443,37 @@ function sParty(){
 
 function sDex(){
   const cs=new Set(S.caught),ss=new Set(S.seen);
+  const sortedIds=Array.from({length:TOTAL},(_,i)=>i+1).sort((a,b)=>getName(a).localeCompare(getName(b)));
+  let curLetter="";
+  const rows=sortedIds.map(id=>{
+    const name=getName(id);
+    const c=cs.has(id),s=ss.has(id);
+    const known=c||s;
+    const letter=(name[0]||"?").toUpperCase();
+    let header="";
+    if(letter!==curLetter){
+      curLetter=letter;
+      header=`<div style="position:sticky;top:0;background:#1a1a2e;color:#D9B921;font-size:11px;font-weight:700;padding:6px 4px 3px;letter-spacing:2px;z-index:1">${letter}</div>`;
+    }
+    return header+`<div style="display:flex;align-items:center;gap:10px;padding:6px;border-radius:6px;background:${c?"#1a2a3e":known?"#22223a":"#181828"};border:1px solid ${c?"#4af3":"transparent"};margin-bottom:3px;opacity:${known?1:0.55}">
+      <div style="width:44px;height:44px;background:#0e0e1a;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        ${known?img(id,40,false):`<span style="color:#444;font-size:22px;font-weight:700">?</span>`}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;${!known?"color:#555":""};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${known?name:"???"}</div>
+        <div style="font-size:10px;color:#666;margin-top:1px">${known?"#"+String(id).padStart(4,"0"):""}</div>
+      </div>
+      ${c?`<span style="font-size:14px;color:#4af;font-weight:700">✓</span>`:s?`<span style="font-size:10px;color:#888;font-style:italic">seen</span>`:""}
+    </div>`;
+  }).join("");
   return`<div class="fi scr">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.75rem">
       <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
       <div><h2 style="margin:0">Pokédex</h2>
-        <div style="font-size:12px;color:#aaa">${S.caught.length} caught · ${S.seen.length} seen · ${TOTAL} total</div>
+        <div style="font-size:12px;color:#aaa">${S.caught.length} caught · ${S.seen.length} seen · ${TOTAL} total (A–Z)</div>
       </div>
     </div>
-    <div style="display:flex;gap:12px;font-size:12px;color:#aaa;margin-bottom:0.75rem">
-      <span><span style="display:inline-block;width:10px;height:10px;background:#1a3a5c;border:1px solid #4af;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Caught</span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:#2a2a3e;border:1px solid #444;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Seen</span>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:2px;max-height:420px;overflow-y:auto">
-      ${Array.from({length:TOTAL},(_,i)=>i+1).map(id=>{
-        const c=cs.has(id),s=ss.has(id);
-        return`<div title="${getName(id)} #${id}${c?" ✓":""}" style="aspect-ratio:1;border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:600;background:${c?"#1a3a5c":s?"#2a2a3e":"#111"};color:${c?"#4af":s?"#555":"transparent"};border:1px solid ${c?"#4af":s?"#333":"transparent"}">${c||s?id:""}</div>`;
-      }).join("")}
-    </div>
+    <div style="max-height:520px;overflow-y:auto;padding:0 2px;position:relative">${rows}</div>
   </div>`;
 }
 
