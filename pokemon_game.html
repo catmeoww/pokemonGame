@@ -97,6 +97,35 @@ function getName(id){
 }
 function getStats(id){return{maxHP:50+((id*13)%70),attack:40+((id*7)%80),defense:35+((id*11)%75)};}
 
+// ── GYMS ──────────────────────────────────────────────────────
+const GYMS=[
+  {key:"boulder",name:"Brock",city:"Pewter City",emoji:"🪨",type:"rock",badge:"Boulder Badge",badgeEmoji:"🟤",
+   team:[{id:74,lv:12},{id:95,lv:14}],
+   reward:{coins:500,balls:3}},
+  {key:"cascade",name:"Misty",city:"Cerulean City",emoji:"💧",type:"water",badge:"Cascade Badge",badgeEmoji:"💧",
+   team:[{id:120,lv:18},{id:121,lv:21}],
+   reward:{coins:800,greatBalls:5,superPotions:1}},
+  {key:"thunder",name:"Lt. Surge",city:"Vermilion City",emoji:"⚡",type:"electric",badge:"Thunder Badge",badgeEmoji:"⚡",
+   team:[{id:100,lv:21},{id:25,lv:18},{id:26,lv:24}],
+   reward:{coins:1200,greatBalls:3,potions:3,revives:1}},
+  {key:"rainbow",name:"Erika",city:"Celadon City",emoji:"🌿",type:"grass",badge:"Rainbow Badge",badgeEmoji:"🌈",
+   team:[{id:71,lv:29},{id:114,lv:24},{id:45,lv:29}],
+   reward:{coins:1500,greatBalls:5,superPotions:2}},
+  {key:"soul",name:"Koga",city:"Fuchsia City",emoji:"☠️",type:"poison",badge:"Soul Badge",badgeEmoji:"💜",
+   team:[{id:109,lv:37},{id:89,lv:39},{id:109,lv:37},{id:110,lv:43}],
+   reward:{coins:2000,ultraBalls:3,revives:2}},
+  {key:"marsh",name:"Sabrina",city:"Saffron City",emoji:"🔮",type:"psychic",badge:"Marsh Badge",badgeEmoji:"🌸",
+   team:[{id:64,lv:38},{id:122,lv:37},{id:49,lv:38},{id:65,lv:43}],
+   reward:{coins:2500,ultraBalls:5,superPotions:3}},
+  {key:"volcano",name:"Blaine",city:"Cinnabar Island",emoji:"🔥",type:"fire",badge:"Volcano Badge",badgeEmoji:"🌋",
+   team:[{id:58,lv:42},{id:77,lv:40},{id:78,lv:42},{id:59,lv:47}],
+   reward:{coins:3000,ultraBalls:5,revives:3}},
+  {key:"earth",name:"Giovanni",city:"Viridian City",emoji:"🌍",type:"ground",badge:"Earth Badge",badgeEmoji:"🟢",
+   team:[{id:111,lv:45},{id:51,lv:42},{id:34,lv:45},{id:31,lv:43},{id:112,lv:50}],
+   reward:{coins:5000,ultraBalls:10,superPotions:5,revives:5}},
+];
+function gymUnlocked(idx){return idx===0||S.badges.includes(GYMS[idx-1].key);}
+
 // ── ROUTES ────────────────────────────────────────────────────
 const ROUTES=[
   {name:"Pallet Outskirts",emoji:"🌾",desc:"Grassy fields, easy walks",lvMin:2,lvMax:7,unlockAt:0,ids:[10,13,16,19,21,29,32,161,163,172,191,263,265,396,399,504,506,519,659,661,731,734,819,821]},
@@ -162,19 +191,20 @@ function sv(k,v){try{localStorage.setItem(sk(k),JSON.stringify(v));}catch{}}
 function ld(k,d){try{const v=localStorage.getItem(sk(k));return v!=null?JSON.parse(v):d;}catch{return d;}}
 function getUsers(){try{return JSON.parse(localStorage.getItem("pk_users")||"[]");}catch{return[];}}
 function setUsers(u){try{localStorage.setItem("pk_users",JSON.stringify(u));}catch{}}
-function delUser(name){["party","caught","seen","balls","greatBalls","ultraBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
-function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
+function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
+function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
 
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   screen:"users",
-  party:[],caught:[],seen:[],
+  party:[],caught:[],seen:[],badges:[],
   balls:20,greatBalls:0,ultraBalls:0,
   potions:0,superPotions:0,revives:0,
   coins:300,lastRoute:0,
   wild:null,wildHP:0,playerHP:0,currentRoute:0,
+  trainer:null, // {gymIdx, teamIdx} or null
   log:[],bState:"active",busy:false,
-  pendingEvo:null,levelUpData:null,
+  pendingEvo:null,levelUpData:null,gymRewardData:null,
   switchCtx:"hub", // "hub" | "battle" | "faint"
   bagOpen:false,reviveTarget:false,
 };
@@ -201,7 +231,7 @@ function pickRouteEncounter(routeIdx){
 // ── RENDER ────────────────────────────────────────────────────
 function render(){
   try{
-    const map={users:sUsers,title:sTitle,starter:sStarter,hub:sHub,battle:sBattle,party:sParty,dex:sDex,shop:sShop,levelup:sLevelUp,switch:sSwitch,routes:sRoutes,revive:sRevive};
+    const map={users:sUsers,title:sTitle,starter:sStarter,hub:sHub,battle:sBattle,party:sParty,dex:sDex,shop:sShop,levelup:sLevelUp,switch:sSwitch,routes:sRoutes,revive:sRevive,gyms:sGyms,gymReward:sGymReward};
     document.getElementById("app").innerHTML=(map[S.screen]||sUsers)();
   }catch(e){
     document.getElementById("app").innerHTML=`<div class="scr"><p style="color:#F44336">Error: ${e.message}</p><button onclick="S.screen='hub';render()">Go to hub</button></div>`;
@@ -311,7 +341,11 @@ function sHub(){
     <div style="height:0.75rem"></div>
     <div class="g2">
       <button id="broutes" ${L.currentHP<=0?"disabled":""}>🗺️ Routes</button>
+      <button id="bgyms" ${L.currentHP<=0?"disabled":""}>🏆 Gyms ${S.badges.length>0?`<span style="font-size:10px;color:#D9B921">(${S.badges.length}/8)</span>`:""}</button>
+    </div>
+    <div class="g2">
       <button id="bheal">💊 Heal all</button>
+      <button id="bshop">🛒 Shop</button>
     </div>
     <div class="g3">
       <button id="bchooseLead">🔄 Switch Lead</button>
@@ -319,10 +353,9 @@ function sHub(){
       <button id="bdex">📖 Pokédex</button>
     </div>
     <div class="g2">
-      <button id="bshop">🛒 Shop</button>
       <button id="bswitchuser" style="background:transparent;border-color:#333;color:#888;font-size:12px">👤 Switch user</button>
+      <button id="breset" style="background:transparent;border-color:transparent;color:#555;font-size:12px;padding:0.4rem">Reset save</button>
     </div>
-    <button id="breset" style="background:transparent;border-color:transparent;color:#555;font-size:12px;padding:0.4rem;margin-top:2px">Reset save</button>
   </div>`;
 }
 
@@ -330,17 +363,24 @@ function sBattle(){
   const pl=S.party[0],w=S.wild;
   if(!w||!pl)return sHub();
   const done=S.bState!=="active";
-  const stateColor={won:"#4CAF50",caught:"#4CAF50",ran:"#aaa",fainted:"#F44336"};
-  const stateMsg={won:"Victory! 🎉",caught:`${w.name} caught! 🎉`,ran:"Got away safely! 🏃",fainted:"All Pokémon fainted! 😢"};
+  const isTrainer=!!S.trainer;
+  const gym=isTrainer?GYMS[S.trainer.gymIdx]:null;
+  const stateColor={won:"#4CAF50",caught:"#4CAF50",ran:"#aaa",fainted:"#F44336",trainerLost:"#F44336"};
+  const stateMsg={won:"Victory! 🎉",caught:`${w.name} caught! 🎉`,ran:"Got away safely! 🏃",fainted:"All Pokémon fainted! 😢",trainerLost:`${gym?gym.name+" beat you!":"You were beaten!"} 😢`};
   const notCaught=!S.caught.includes(w.id);
   const hasRoom=S.party.length<6;
   const hasBalls=S.balls>0;
   const canSwitch=S.party.filter(p=>p.currentHP>0).length>1;
   return`<div class="fi scr">
-    <div class="card" style="display:flex;justify-content:space-between;align-items:flex-start">
+    ${isTrainer?`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 4px">
+        <span style="font-size:12px;color:#D9B921;font-weight:700">${gym.emoji} ${gym.name} · ${gym.city}</span>
+        <span style="font-size:11px;color:#aaa">Pokémon ${S.trainer.teamIdx+1}/${gym.team.length}</span>
+      </div>`:""}
+    <div class="card" style="display:flex;justify-content:space-between;align-items:flex-start${isTrainer?";border-color:#D9B921":""}">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-          <span style="font-weight:700">Wild ${w.name}</span>
+          <span style="font-weight:700">${isTrainer?"":"Wild "}${w.name}</span>
           ${lvbadge(w.level)}
           <span style="font-size:11px;color:#555">#${String(w.id).padStart(4,"0")}</span>
         </div>
@@ -362,13 +402,13 @@ function sBattle(){
     ${done?`
       <div style="text-align:center;padding:0.5rem 0">
         <div style="font-size:15px;font-weight:700;color:${stateColor[S.bState]||"#eee"};margin-bottom:0.75rem">${stateMsg[S.bState]||""}</div>
-        ${S.bState==="won"&&notCaught&&hasRoom&&hasBalls?`
+        ${!isTrainer&&S.bState==="won"&&notCaught&&hasRoom&&hasBalls?`
           <div class="card" style="background:#1f2a1a;border-color:#D9B921;text-align:left;margin-bottom:0.75rem">
             <div style="font-size:13px;color:#D9B921;font-weight:600;margin-bottom:0.5rem">🎯 ${w.name} is knocked out — catch it now? (${S.balls} ball${S.balls!==1?"s":""})</div>
             <button id="bcatchfainted" style="background:#1a2a1a;border-color:#D9B921;color:#D9B921;font-weight:600">Catch ${w.name}!</button>
           </div>`:
-          S.bState==="won"&&!notCaught?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Already in your Pokédex ✓</p>`:
-          S.bState==="won"&&!hasRoom?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Party is full (release one to catch more)</p>`:""}
+          !isTrainer&&S.bState==="won"&&!notCaught?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Already in your Pokédex ✓</p>`:
+          !isTrainer&&S.bState==="won"&&!hasRoom?`<p style="font-size:12px;color:#555;margin-bottom:0.75rem">Party is full (release one to catch more)</p>`:""}
         ${S.pendingEvo?`
           <div class="card" style="background:#1a2a1a;border-color:#4CAF50;text-align:left;margin-bottom:0.75rem">
             <div style="font-weight:600;color:#4CAF50;margin-bottom:0.5rem">✨ ${S.pendingEvo.fromName} wants to evolve into ${getName(S.pendingEvo.toId)}!</div>
@@ -385,13 +425,14 @@ function sBattle(){
             <span style="font-weight:700">🎒 Bag</span>
             <button id="bclosebag" style="width:auto;padding:0.3rem 0.7rem;font-size:11px">← Back</button>
           </div>
+          ${isTrainer?`<div style="font-size:11px;color:#888;margin-bottom:8px;font-style:italic">Can't use Pokéballs against a trainer</div>`:`
           <div style="font-size:11px;color:#aaa;margin-bottom:6px">POKÉBALLS</div>
           <div class="g3" style="margin-bottom:8px">
             ${Object.entries(BALLS).map(([k,b])=>{
               const cnt=k==="pokeball"?S.balls:k==="greatBall"?S.greatBalls:S.ultraBalls;
               return`<button class="bagball" data-key="${k}" ${S.busy||cnt<=0?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem;border-color:${b.color};color:${b.color}">${b.emoji} ${b.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
             }).join("")}
-          </div>
+          </div>`}
           <div style="font-size:11px;color:#aaa;margin-bottom:6px">ITEMS</div>
           <div class="g3">
             ${Object.entries(ITEMS).map(([k,it])=>{
@@ -404,11 +445,16 @@ function sBattle(){
             }).join("")}
           </div>
         </div>`:`
+      ${isTrainer?`
+      <div class="g2">
+        <button id="batk" ${S.busy?"disabled":""}>⚔️ Attack</button>
+        <button id="bopenbag" ${S.busy?"disabled":""}>🎒 Bag</button>
+      </div>`:`
       <div class="g3">
         <button id="batk" ${S.busy?"disabled":""}>⚔️ Attack</button>
         <button id="bopenbag" ${S.busy?"disabled":""}>🎒 Bag</button>
         <button id="brun" ${S.busy?"disabled":""}>🏃 Run</button>
-      </div>
+      </div>`}
       <button id="bswitchbattle" ${S.busy||!canSwitch?"disabled":""} style="margin-top:0">🔄 Switch Pokémon</button>`}`}
   </div>`;
 }
@@ -537,6 +583,54 @@ function sRoutes(){
   </div>`;
 }
 
+function sGyms(){
+  return`<div class="fi scr">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
+      <div><h2 style="margin:0">Gym Leaders</h2>
+        <div style="font-size:12px;color:#aaa">${S.badges.length}/8 badges · Defeat in order</div>
+      </div>
+    </div>
+    ${GYMS.map((g,i)=>{
+      const unlocked=gymUnlocked(i);
+      const earned=S.badges.includes(g.key);
+      const maxLv=Math.max(...g.team.map(m=>m.lv));
+      return`<div class="card" style="display:flex;align-items:center;gap:12px;opacity:${unlocked?1:0.45};border-color:${earned?"#D9B921":"#3a3a5e"}">
+        <div style="font-size:34px;width:48px;text-align:center">${g.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+            <span style="font-weight:700">${g.name}</span>
+            ${earned?`<span title="${g.badge}" style="font-size:14px">${g.badgeEmoji}</span>`:""}
+            <span class="badge" style="background:${TCOLOR[TYPES.indexOf(g.type)]}">${g.type[0].toUpperCase()+g.type.slice(1)}</span>
+          </div>
+          <div style="font-size:11px;color:#aaa">${g.city}</div>
+          <div style="font-size:11px;color:#D9B921;margin-top:2px">${g.team.length} Pokémon · Up to Lv.${maxLv}</div>
+        </div>
+        ${unlocked?`<button class="gymbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:${earned?"#2a2a3e":"#3a2a1a"};border-color:${earned?"#888":"#D9B921"};color:${earned?"#888":"#D9B921"}">${earned?"Rematch":"Challenge ⚔️"}</button>`:`<div style="width:84px;font-size:18px;text-align:center;color:#555">🔒</div>`}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function sGymReward(){
+  const d=S.gymRewardData;
+  if(!d){S.screen="hub";return sHub();}
+  return`<div class="fi scr" style="text-align:center;padding-top:1.5rem">
+    <div style="font-size:54px;margin-bottom:0.5rem">🏆</div>
+    <h2 style="font-size:22px;font-weight:700;color:#D9B921;margin-bottom:4px">${d.repeat?"Defeated":"You beat"} ${d.name}!</h2>
+    ${d.repeat?`<div style="font-size:12px;color:#888;margin-bottom:1rem">Already earned this badge</div>`:`
+      <div style="font-size:48px;margin:0.5rem 0">${d.badgeEmoji}</div>
+      <div style="font-size:16px;font-weight:600;color:#D9B921;margin-bottom:1rem">${d.badge} earned!</div>`}
+    ${!d.repeat?`
+      <div class="card" style="text-align:left;margin-bottom:0.75rem">
+        <div style="font-size:12px;color:#aaa;margin-bottom:0.5rem;font-weight:600">REWARDS</div>
+        ${d.rewardList.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:14px">${r.label}</span><span style="font-size:14px;color:#4CAF50;font-weight:700">+${r.amount}</span></div>`).join("")}
+      </div>`:""}
+    <div style="font-size:12px;color:#aaa;margin-bottom:1rem">💊 Your party has been fully healed</div>
+    <button id="bhub" style="padding:0.85rem;font-size:15px;font-weight:600">Continue →</button>
+  </div>`;
+}
+
 function sRevive(){
   const fainted=S.party.map((p,i)=>({p,i})).filter(x=>x.p.currentHP<=0);
   return`<div class="fi scr">
@@ -586,7 +680,7 @@ function sLevelUp(){
           <button id="bcancelevo" style="color:#aaa;border-color:#555">Cancel ✗</button>
         </div>
       </div>`:""}
-    <button id="bhub" style="padding:0.85rem;font-size:15px;font-weight:600">Continue →</button>
+    <button id="blevelcontinue" style="padding:0.85rem;font-size:15px;font-weight:600">Continue →</button>
   </div>`;
 }
 
@@ -623,6 +717,7 @@ function sSwitch(){
 function doExplore(routeIdx){
   if(typeof routeIdx==="number")S.currentRoute=routeIdx;
   S.lastRoute=S.currentRoute;
+  S.trainer=null;
   const{id,level}=pickRouteEncounter(S.currentRoute);
   const w=buildWild(id,level);
   if(!S.seen.includes(id)){S.seen.push(id);sv("seen",S.seen);}
@@ -633,6 +728,20 @@ function doExplore(routeIdx){
   if(e>=2)addLog("✨ Your type is super effective!");
   else if(e>0&&e<1)addLog("😬 Its type resists yours...");
   S.bState="active";S.screen="battle";sv("lastRoute",S.lastRoute);render();
+}
+
+function doStartGym(idx){
+  if(!gymUnlocked(idx))return;
+  const gym=GYMS[idx];
+  S.trainer={gymIdx:idx,teamIdx:0};
+  const m=gym.team[0];
+  const w=buildWild(m.id,m.lv);
+  if(!S.seen.includes(m.id)){S.seen.push(m.id);}
+  S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;
+  addLog(`🎽 ${gym.name} challenges you to a battle!`);
+  addLog(`🎽 ${gym.name} sends out ${w.name}!`);
+  S.bState="active";S.screen="battle";render();
 }
 
 function checkFaint(){
@@ -646,8 +755,26 @@ function checkFaint(){
     saveAll();S.switchCtx="faint";S.screen="switch";
     return true;
   }
-  S.bState="fainted";saveAll();
+  S.bState=S.trainer?"trainerLost":"fainted";saveAll();
   return true;
+}
+
+function applyXpAndLevel(p,gained){
+  p.xp=(p.xp||0)+gained;
+  const oldLv=p.level||1;
+  p.level=levelFromXP(p.xp);
+  if(p.level>oldLv){
+    const ns=getStats(p.id);
+    const nHP=Math.min(p.maxHP+Math.floor((p.level-oldLv)*2.5), ns.maxHP+30);
+    const nAtk=p.attack+Math.floor((p.level-oldLv)*1.5);
+    const nDef=p.defense+Math.floor((p.level-oldLv)*1.2);
+    S.levelUpData={name:p.name,types:p.types,id:p.id,oldLv,newLv:p.level,oHP:p.maxHP,nHP,oAtk:p.attack,nAtk,oDef:p.defense,nDef};
+    p.maxHP=nHP;p.attack=nAtk;p.defense=nDef;
+    p.currentHP=Math.min(p.currentHP,nHP);
+    const evo=EVOS[p.id];
+    if(evo&&p.level>=evo[1])S.pendingEvo={fromName:p.name,toId:evo[0]};
+  }
+  return p;
 }
 
 async function doAtk(){
@@ -656,38 +783,69 @@ async function doAtk(){
   const pl=S.party[0];
   const{dmg,eff}=calcDmg(pl,S.wild);
   S.wildHP=Math.max(0,S.wildHP-dmg);
+  const oppLabel=S.trainer?"":"Wild ";
   addLog(`⚔️ ${pl.name} dealt ${dmg} dmg!${eff>=2?" Super effective!":eff>0&&eff<1?" Not very effective...":eff===0?" No effect!":""}`);
   if(S.wildHP<=0){
-    // Win!
-    S.balls++;
     const wLv=S.wild.level||5;
     const coinReward=Math.floor(15+wLv*2+Math.random()*wLv*1.5);
     S.coins+=coinReward;
     const gained=Math.floor(wLv*15*(0.8+Math.random()*0.4));
     let p={...S.party[0],currentHP:S.playerHP};
-    p.xp=(p.xp||0)+gained;
-    const oldLv=p.level||1;
-    p.level=levelFromXP(p.xp);
-    addLog(`💀 Wild ${S.wild.name} fainted! +${gained} XP, +${coinReward} 🪙, +1 🔴`);
-    if(p.level>oldLv){
-      const ns=getStats(p.id);
-      const nHP=Math.min(p.maxHP+Math.floor((p.level-oldLv)*2.5), ns.maxHP+30);
-      const nAtk=p.attack+Math.floor((p.level-oldLv)*1.5);
-      const nDef=p.defense+Math.floor((p.level-oldLv)*1.2);
-      S.levelUpData={name:p.name,types:p.types,id:p.id,oldLv,newLv:p.level,oHP:p.maxHP,nHP,oAtk:p.attack,nAtk,oDef:p.defense,nDef};
-      p.maxHP=nHP;p.attack=nAtk;p.defense=nDef;
-      p.currentHP=Math.min(p.currentHP,nHP);
-      const evo=EVOS[p.id];
-      if(evo&&p.level>=evo[1])S.pendingEvo={fromName:p.name,toId:evo[0]};
+    p=applyXpAndLevel(p,gained);
+    S.party[0]=p;
+    if(S.trainer){
+      const gym=GYMS[S.trainer.gymIdx];
+      addLog(`💀 ${S.wild.name} fainted! +${gained} XP, +${coinReward} 🪙`);
+      S.trainer.teamIdx++;
+      if(S.trainer.teamIdx>=gym.team.length){
+        // Gym defeated!
+        const newBadge=!S.badges.includes(gym.key);
+        const rewardList=[];
+        if(newBadge){
+          S.badges.push(gym.key);
+          const r=gym.reward;
+          if(r.coins){S.coins+=r.coins;rewardList.push({label:"🪙 Coins",amount:r.coins});}
+          if(r.balls){S.balls+=r.balls;rewardList.push({label:"🔴 Pokéballs",amount:r.balls});}
+          if(r.greatBalls){S.greatBalls+=r.greatBalls;rewardList.push({label:"🔵 Great Balls",amount:r.greatBalls});}
+          if(r.ultraBalls){S.ultraBalls+=r.ultraBalls;rewardList.push({label:"⚫ Ultra Balls",amount:r.ultraBalls});}
+          if(r.potions){S.potions+=r.potions;rewardList.push({label:"🧪 Potions",amount:r.potions});}
+          if(r.superPotions){S.superPotions+=r.superPotions;rewardList.push({label:"💉 Super Potions",amount:r.superPotions});}
+          if(r.revives){S.revives+=r.revives;rewardList.push({label:"💖 Revives",amount:r.revives});}
+          addLog(`🏆 You earned the ${gym.badge}!`);
+        } else {
+          addLog(`🏆 You defeated ${gym.name} again!`);
+        }
+        // Heal whole party
+        S.party=S.party.map(pp=>({...pp,currentHP:pp.maxHP}));
+        S.playerHP=S.party[0].maxHP;
+        S.gymRewardData={name:gym.name,badge:gym.badge,badgeEmoji:gym.badgeEmoji,repeat:!newBadge,rewardList};
+        S.bState="won";S.trainer=null;saveAll();S.busy=false;
+        if(S.levelUpData){S.screen="levelup";}
+        else{S.screen="gymReward";}
+        render();return;
+      } else {
+        // Send next Pokémon
+        const next=gym.team[S.trainer.teamIdx];
+        const nw=buildWild(next.id,next.lv);
+        if(!S.seen.includes(next.id)){S.seen.push(next.id);}
+        S.wild=nw;S.wildHP=nw.maxHP;
+        addLog(`🎽 ${gym.name} sends out ${nw.name}!`);
+        saveAll();S.busy=false;
+        if(S.levelUpData){S.screen="levelup";}
+        render();return;
+      }
     }
-    S.party[0]=p;S.bState="won";saveAll();S.busy=false;
+    // Wild battle win
+    S.balls++;
+    addLog(`💀 Wild ${S.wild.name} fainted! +${gained} XP, +${coinReward} 🪙, +1 🔴`);
+    S.bState="won";saveAll();S.busy=false;
     if(S.levelUpData){S.screen="levelup";}
     render();return;
   }
   render();await delay(480);
   const{dmg:wd,eff:we}=calcDmg(S.wild,pl);
   S.playerHP=Math.max(0,S.playerHP-wd);
-  addLog(`💥 Wild ${S.wild.name} dealt ${wd} dmg!${we>=2?" Super effective!":we>0&&we<1?" Not very effective...":""}`);
+  addLog(`💥 ${oppLabel}${S.wild.name} dealt ${wd} dmg!${we>=2?" Super effective!":we>0&&we<1?" Not very effective...":""}`);
   S.busy=false;
   if(checkFaint()){render();return;}
   render();
@@ -698,6 +856,7 @@ async function doCatch(ballKey){
   const ball=BALLS[ballKey];
   const stockField=ballKey==="pokeball"?"balls":ballKey==="greatBall"?"greatBalls":"ultraBalls";
   if(S.busy||S.bState!=="active"||S[stockField]<=0)return;
+  if(S.trainer){addLog("❌ Can't catch a trainer's Pokémon!");render();return;}
   S.busy=true;S[stockField]--;S.bagOpen=false;
   addLog(`${ball.emoji} Threw a ${ball.name}!`);render();
   await delay(700);
@@ -763,6 +922,7 @@ function doRevive(idx){
 
 async function doRun(){
   if(S.busy||S.bState!=="active")return;
+  if(S.trainer){addLog("❌ Can't run from a gym battle!");render();return;}
   S.busy=true;render();await delay(280);
   if(Math.random()>0.3){
     addLog("🏃 Got away safely!");S.bState="ran";
@@ -824,7 +984,7 @@ function bind(){
   document.querySelectorAll("[id^='pu']").forEach(el=>{
     el.addEventListener("click",()=>{
       const u=el.dataset.user;USER=u;
-      S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);
+      S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);S.badges=ld("badges",[]);
       S.balls=ld("balls",20);S.greatBalls=ld("greatBalls",0);S.ultraBalls=ld("ultraBalls",0);
       S.potions=ld("potions",0);S.superPotions=ld("superPotions",0);S.revives=ld("revives",0);
       S.coins=ld("coins",300);S.lastRoute=ld("lastRoute",0);S.currentRoute=S.lastRoute;
@@ -843,7 +1003,7 @@ function bind(){
     const users=getUsers();
     if(users.includes(name)){alert("Name already taken!");return;}
     users.push(name);setUsers(users);
-    USER=name;S.party=[];S.caught=[];S.seen=[];
+    USER=name;S.party=[];S.caught=[];S.seen=[];S.badges=[];
     S.balls=20;S.greatBalls=0;S.ultraBalls=0;
     S.potions=0;S.superPotions=0;S.revives=0;
     S.coins=300;S.lastRoute=0;S.currentRoute=0;
@@ -854,13 +1014,22 @@ function bind(){
 
   // Nav
   on("bnew",()=>{S.screen="starter";render();});
-  on("bhub",()=>{S.levelUpData=null;S.bagOpen=false;S.screen="hub";render();});
+  on("bhub",()=>{
+    S.levelUpData=null;S.bagOpen=false;S.gymRewardData=null;
+    // If returning from a lost trainer battle, free heal
+    if(S.trainer&&S.bState==="fainted"){
+      S.party=S.party.map(p=>({...p,currentHP:p.maxHP}));
+    }
+    S.trainer=null;
+    S.screen="hub";saveAll();render();
+  });
   on("bswitch",()=>{S.screen="users";render();});
   on("bswitchuser",()=>{S.screen="users";render();});
   on("bparty",()=>{S.screen="party";render();});
   on("bdex",()=>{S.screen="dex";render();});
   on("bshop",()=>{S.screen="shop";render();});
   on("broutes",()=>{S.screen="routes";render();});
+  on("bgyms",()=>{S.screen="gyms";render();});
   on("bchooseLead",()=>{S.switchCtx="hub";S.screen="switch";render();});
   on("bswitchbattle",()=>{S.switchCtx="battle";S.bagOpen=false;S.screen="switch";render();});
   on("bopenbag",()=>{S.bagOpen=true;render();});
@@ -870,6 +1039,20 @@ function bind(){
   // Route picker
   document.querySelectorAll(".rtbtn").forEach(btn=>{
     btn.addEventListener("click",()=>doExplore(parseInt(btn.dataset.idx)));
+  });
+
+  // Gym picker
+  document.querySelectorAll(".gymbtn").forEach(btn=>{
+    btn.addEventListener("click",()=>doStartGym(parseInt(btn.dataset.idx)));
+  });
+
+  // Level-up Continue: route based on context
+  on("blevelcontinue",()=>{
+    S.levelUpData=null;
+    if(S.gymRewardData){S.screen="gymReward";}
+    else if(S.wild&&(S.bState==="active"||S.bState==="won")){S.screen="battle";}
+    else{S.screen="hub";}
+    render();
   });
 
   // Bag balls / items
@@ -945,7 +1128,7 @@ function bind(){
   // Reset
   on("breset",()=>{
     if(!confirm("Reset "+USER+"'s save?"))return;
-    S.party=[];S.caught=[];S.seen=[];
+    S.party=[];S.caught=[];S.seen=[];S.badges=[];
     S.balls=20;S.greatBalls=0;S.ultraBalls=0;
     S.potions=0;S.superPotions=0;S.revives=0;
     S.coins=300;S.lastRoute=0;S.currentRoute=0;
