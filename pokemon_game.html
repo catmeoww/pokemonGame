@@ -139,7 +139,22 @@ const ROUTES=[
 function isRouteUnlocked(idx,caughtCount){return caughtCount>=ROUTES[idx].unlockAt;}
 
 // ── BALLS & ITEMS ─────────────────────────────────────────────
-const BALLS={pokeball:{name:"Pokéball",emoji:"🔴",mult:1,price:100,color:"#F44336"},greatBall:{name:"Great Ball",emoji:"🔵",mult:1.5,price:300,color:"#4F8FD1"},ultraBall:{name:"Ultra Ball",emoji:"⚫",mult:2.5,price:800,color:"#D9B921"}};
+const BALLS={
+  pokeball:{name:"Pokéball",emoji:"🔴",mult:1,price:100,color:"#F44336"},
+  greatBall:{name:"Great Ball",emoji:"🔵",mult:1.5,price:300,color:"#4F8FD1"},
+  ultraBall:{name:"Ultra Ball",emoji:"⚫",mult:2.5,price:800,color:"#D9B921"},
+  quickBall:{name:"Quick Ball",emoji:"🟡",mult:1,price:500,color:"#FFE082",hint:"3× on first throw",
+    bonus:ctx=>ctx.turnCount<=1?3:1},
+  duskBall:{name:"Dusk Ball",emoji:"🟣",mult:1,price:500,color:"#9575CD",hint:"3× in caves",
+    bonus:ctx=>(ctx.routeIdx===2||ctx.routeIdx===4||ctx.routeIdx===6)?3:1},
+  netBall:{name:"Net Ball",emoji:"🟢",mult:1,price:500,color:"#4CAF50",hint:"3× vs bug/water",
+    bonus:ctx=>(ctx.wild&&(ctx.wild.types.includes("bug")||ctx.wild.types.includes("water")))?3:1},
+  repeatBall:{name:"Repeat Ball",emoji:"🟠",mult:1,price:500,color:"#FF9800",hint:"3× if already caught",
+    bonus:ctx=>ctx.alreadyCaught?3:1},
+  masterBall:{name:"Master Ball",emoji:"⭐",mult:1,price:15000,color:"#9C27B0",hint:"Always catches",guarantee:true},
+};
+const BALL_KEYS=Object.keys(BALLS);
+function ballStock(key){return key==="pokeball"?"balls":key+"s";}
 const ITEMS={potion:{name:"Potion",emoji:"🧪",desc:"Heals 50 HP",price:150,heal:50},superPotion:{name:"Super Potion",emoji:"💉",desc:"Heals 150 HP",price:400,heal:150},revive:{name:"Revive",emoji:"💖",desc:"Revive at 50% HP",price:600,revive:true}};
 
 // ── EVOLUTIONS ────────────────────────────────────────────────
@@ -191,19 +206,20 @@ function sv(k,v){try{localStorage.setItem(sk(k),JSON.stringify(v));}catch{}}
 function ld(k,d){try{const v=localStorage.getItem(sk(k));return v!=null?JSON.parse(v):d;}catch{return d;}}
 function getUsers(){try{return JSON.parse(localStorage.getItem("pk_users")||"[]");}catch{return[];}}
 function setUsers(u){try{localStorage.setItem("pk_users",JSON.stringify(u));}catch{}}
-function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
-function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
+function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","quickBalls","duskBalls","netBalls","repeatBalls","masterBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
+function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("quickBalls",S.quickBalls);sv("duskBalls",S.duskBalls);sv("netBalls",S.netBalls);sv("repeatBalls",S.repeatBalls);sv("masterBalls",S.masterBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
 
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   screen:"users",
   party:[],caught:[],seen:[],badges:[],
   balls:20,greatBalls:0,ultraBalls:0,
+  quickBalls:0,duskBalls:0,netBalls:0,repeatBalls:0,masterBalls:0,
   potions:0,superPotions:0,revives:0,
   coins:300,lastRoute:0,
   wild:null,wildHP:0,playerHP:0,currentRoute:0,
   trainer:null, // {gymIdx, teamIdx} or null
-  log:[],bState:"active",busy:false,
+  log:[],bState:"active",busy:false,turnCount:0,
   pendingEvo:null,levelUpData:null,gymRewardData:null,
   switchCtx:"hub", // "hub" | "battle" | "faint"
   bagOpen:false,reviveTarget:false,
@@ -313,13 +329,11 @@ function sHub(){
       <span style="font-size:12px;color:#D9B921;font-weight:600">🪙 ${S.coins}</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:0.5rem;font-size:11px;color:#aaa;flex-wrap:wrap">
-      <span title="Pokéball">🔴 ${S.balls}</span>
-      <span title="Great Ball">🔵 ${S.greatBalls}</span>
-      <span title="Ultra Ball">⚫ ${S.ultraBalls}</span>
+      ${BALL_KEYS.map(k=>{const c=S[ballStock(k)];return`<span title="${BALLS[k].name}" style="opacity:${c>0?1:0.4}">${BALLS[k].emoji} ${c}</span>`;}).join("")}
       <span style="color:#444">·</span>
-      <span title="Potion">🧪 ${S.potions}</span>
-      <span title="Super Potion">💉 ${S.superPotions}</span>
-      <span title="Revive">💖 ${S.revives}</span>
+      <span title="Potion" style="opacity:${S.potions>0?1:0.4}">🧪 ${S.potions}</span>
+      <span title="Super Potion" style="opacity:${S.superPotions>0?1:0.4}">💉 ${S.superPotions}</span>
+      <span title="Revive" style="opacity:${S.revives>0?1:0.4}">💖 ${S.revives}</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:1rem">
       ${[["Caught",S.caught.length],["Seen",S.seen.length],["Party",S.party.length+"/6"]].map(([l,v])=>`<div class="stat"><div style="font-size:19px;font-weight:600">${v}</div><div style="font-size:11px;color:#aaa">${l}</div></div>`).join("")}
@@ -427,10 +441,11 @@ function sBattle(){
           </div>
           ${isTrainer?`<div style="font-size:11px;color:#888;margin-bottom:8px;font-style:italic">Can't use Pokéballs against a trainer</div>`:`
           <div style="font-size:11px;color:#aaa;margin-bottom:6px">POKÉBALLS</div>
-          <div class="g3" style="margin-bottom:8px">
-            ${Object.entries(BALLS).map(([k,b])=>{
-              const cnt=k==="pokeball"?S.balls:k==="greatBall"?S.greatBalls:S.ultraBalls;
-              return`<button class="bagball" data-key="${k}" ${S.busy||cnt<=0?"disabled":""} style="font-size:12px;padding:0.5rem 0.3rem;border-color:${b.color};color:${b.color}">${b.emoji} ${b.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">
+            ${BALL_KEYS.map(k=>{
+              const b=BALLS[k];
+              const cnt=S[ballStock(k)];
+              return`<button class="bagball" data-key="${k}" ${S.busy||cnt<=0?"disabled":""} title="${b.hint||""}" style="font-size:11px;padding:0.45rem 0.2rem;border-color:${b.color};color:${b.color};line-height:1.3">${b.emoji}<br>${b.name}<br><span style="font-size:10px;color:#aaa;font-weight:400">×${cnt}</span></button>`;
             }).join("")}
           </div>`}
           <div style="font-size:11px;color:#aaa;margin-bottom:6px">ITEMS</div>
@@ -524,14 +539,26 @@ function sDex(){
 }
 
 function sShop(){
-  const shopItems=[
-    {key:"pokeball",label:"🔴 Pokéball",sub:"Standard catch chance",price:BALLS.pokeball.price,color:"#F44336"},
-    {key:"greatBall",label:"🔵 Great Ball",sub:"1.5× catch chance",price:BALLS.greatBall.price,color:"#4F8FD1"},
-    {key:"ultraBall",label:"⚫ Ultra Ball",sub:"2.5× catch chance",price:BALLS.ultraBall.price,color:"#D9B921"},
-    {key:"potion",label:"🧪 Potion",sub:"Heals 50 HP in battle",price:ITEMS.potion.price,color:"#4CAF50"},
-    {key:"superPotion",label:"💉 Super Potion",sub:"Heals 150 HP in battle",price:ITEMS.superPotion.price,color:"#4CAF50"},
-    {key:"revive",label:"💖 Revive",sub:"Revive a fainted Pokémon",price:ITEMS.revive.price,color:"#F472B6"},
+  const ballRows=BALL_KEYS.map(k=>{
+    const b=BALLS[k];
+    return{key:k,emoji:b.emoji,label:b.name,sub:k==="pokeball"?"Standard catch chance":k==="greatBall"?"1.5× catch chance":k==="ultraBall"?"2.5× catch chance":b.hint||"",price:b.price,color:b.color,stockField:ballStock(k)};
+  });
+  const itemRows=[
+    {key:"potion",emoji:"🧪",label:"Potion",sub:"Heals 50 HP in battle",price:ITEMS.potion.price,color:"#4CAF50",stockField:"potions"},
+    {key:"superPotion",emoji:"💉",label:"Super Potion",sub:"Heals 150 HP in battle",price:ITEMS.superPotion.price,color:"#4CAF50",stockField:"superPotions"},
+    {key:"revive",emoji:"💖",label:"Revive",sub:"Revive a fainted Pokémon",price:ITEMS.revive.price,color:"#F472B6",stockField:"revives"},
   ];
+  const row=(it)=>{
+    const cnt=S[it.stockField];
+    const can=S.coins>=it.price;
+    return`<div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;padding:0.65rem 0.85rem">
+      <div style="min-width:0;flex:1">
+        <div style="font-weight:600;margin-bottom:2px">${it.emoji} ${it.label} <span style="font-size:11px;color:#888;font-weight:400">×${cnt}</span></div>
+        <div style="font-size:11px;color:#aaa">${it.sub}</div>
+      </div>
+      <button class="buybtn" data-key="${it.key}" ${can?"":"disabled"} style="width:auto;padding:0.5rem 0.85rem;background:transparent;border-color:${can?it.color:"#444"};color:${can?it.color:"#666"};font-weight:600;font-size:12px;white-space:nowrap">🪙 ${it.price}</button>
+    </div>`;
+  };
   return`<div class="fi scr">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
       <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
@@ -539,20 +566,13 @@ function sShop(){
         <div style="font-size:12px;color:#D9B921;font-weight:600">🪙 ${S.coins} coins</div>
       </div>
     </div>
-    <div class="card" style="border-color:#4CAF5066;margin-bottom:0.75rem">
-      <div style="font-size:13px;color:#aaa">💡 Win battles to earn <strong style="color:#D9B921">coins</strong> + a free Pokéball each time!</div>
+    <div class="card" style="border-color:#4CAF5066;margin-bottom:0.75rem;padding:0.6rem 0.85rem">
+      <div style="font-size:12px;color:#aaa">💡 Win battles to earn <strong style="color:#D9B921">coins</strong> + a free Pokéball!</div>
     </div>
-    ${shopItems.map(it=>{
-      const cnt=it.key==="pokeball"?S.balls:it.key==="greatBall"?S.greatBalls:it.key==="ultraBall"?S.ultraBalls:it.key==="potion"?S.potions:it.key==="superPotion"?S.superPotions:S.revives;
-      const can=S.coins>=it.price;
-      return`<div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
-        <div style="min-width:0;flex:1">
-          <div style="font-weight:600;margin-bottom:2px">${it.label} <span style="font-size:11px;color:#888;font-weight:400">×${cnt}</span></div>
-          <div style="font-size:12px;color:#aaa">${it.sub}</div>
-        </div>
-        <button class="buybtn" data-key="${it.key}" ${can?"":"disabled"} style="width:auto;padding:0.5rem 0.85rem;background:transparent;border-color:${can?it.color:"#444"};color:${can?it.color:"#666"};font-weight:600;font-size:12px;white-space:nowrap">🪙 ${it.price}</button>
-      </div>`;
-    }).join("")}
+    <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:6px;letter-spacing:1px">POKÉBALLS</div>
+    ${ballRows.map(row).join("")}
+    <div style="font-size:11px;color:#888;font-weight:600;margin:10px 0 6px;letter-spacing:1px">ITEMS</div>
+    ${itemRows.map(row).join("")}
   </div>`;
 }
 
@@ -722,7 +742,7 @@ function doExplore(routeIdx){
   const w=buildWild(id,level);
   if(!S.seen.includes(id)){S.seen.push(id);sv("seen",S.seen);}
   S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
-  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;
   addLog(`⚡ A wild ${w.name} appeared! (${ROUTES[S.currentRoute].name})`);
   const e=tEff(S.party[0].types,w.types);
   if(e>=2)addLog("✨ Your type is super effective!");
@@ -738,7 +758,7 @@ function doStartGym(idx){
   const w=buildWild(m.id,m.lv);
   if(!S.seen.includes(m.id)){S.seen.push(m.id);}
   S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
-  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;
   addLog(`🎽 ${gym.name} challenges you to a battle!`);
   addLog(`🎽 ${gym.name} sends out ${w.name}!`);
   S.bState="active";S.screen="battle";render();
@@ -779,7 +799,7 @@ function applyXpAndLevel(p,gained){
 
 async function doAtk(){
   if(S.busy||S.bState!=="active")return;
-  S.busy=true;render();
+  S.busy=true;S.turnCount++;render();
   const pl=S.party[0];
   const{dmg,eff}=calcDmg(pl,S.wild);
   S.wildHP=Math.max(0,S.wildHP-dmg);
@@ -853,15 +873,23 @@ async function doAtk(){
 
 async function doCatch(ballKey){
   ballKey=ballKey||"pokeball";
-  const ball=BALLS[ballKey];
-  const stockField=ballKey==="pokeball"?"balls":ballKey==="greatBall"?"greatBalls":"ultraBalls";
+  const ball=BALLS[ballKey];if(!ball)return;
+  const stockField=ballStock(ballKey);
   if(S.busy||S.bState!=="active"||S[stockField]<=0)return;
   if(S.trainer){addLog("❌ Can't catch a trainer's Pokémon!");render();return;}
-  S.busy=true;S[stockField]--;S.bagOpen=false;
+  S.busy=true;S[stockField]--;S.bagOpen=false;S.turnCount++;
   addLog(`${ball.emoji} Threw a ${ball.name}!`);render();
   await delay(700);
-  const base=(1-(S.wildHP/S.wild.maxHP)*0.6)*0.75;
-  const chance=Math.min(0.97,base*ball.mult);
+  let chance;
+  if(ball.guarantee){
+    chance=1;
+  } else {
+    const ctx={turnCount:S.turnCount,routeIdx:S.currentRoute,wild:S.wild,alreadyCaught:S.caught.includes(S.wild.id)};
+    const bonus=ball.bonus?ball.bonus(ctx):1;
+    const base=(1-(S.wildHP/S.wild.maxHP)*0.6)*0.75;
+    chance=Math.min(0.98,base*ball.mult*bonus);
+    if(bonus>1)addLog(`✨ The ${ball.name} reacts strongly! (${bonus}× bonus)`);
+  }
   if(Math.random()<chance){
     addLog(`🎉 Gotcha! ${S.wild.name} was caught!`);S.bState="caught";
     if(!S.caught.includes(S.wild.id))S.caught.push(S.wild.id);
@@ -891,7 +919,7 @@ async function doUseItem(key){
   if(S.busy||S.bState!=="active")return;
   const pl=S.party[0];
   if(S.playerHP>=pl.maxHP){addLog(`💚 ${pl.name} is already at full HP.`);render();return;}
-  S.busy=true;S[stockField]--;S.bagOpen=false;
+  S.busy=true;S[stockField]--;S.bagOpen=false;S.turnCount++;
   const before=S.playerHP;
   S.playerHP=Math.min(pl.maxHP,S.playerHP+it.heal);
   const healed=S.playerHP-before;
@@ -986,6 +1014,7 @@ function bind(){
       const u=el.dataset.user;USER=u;
       S.party=ld("party",[]);S.caught=ld("caught",[]);S.seen=ld("seen",[]);S.badges=ld("badges",[]);
       S.balls=ld("balls",20);S.greatBalls=ld("greatBalls",0);S.ultraBalls=ld("ultraBalls",0);
+      S.quickBalls=ld("quickBalls",0);S.duskBalls=ld("duskBalls",0);S.netBalls=ld("netBalls",0);S.repeatBalls=ld("repeatBalls",0);S.masterBalls=ld("masterBalls",0);
       S.potions=ld("potions",0);S.superPotions=ld("superPotions",0);S.revives=ld("revives",0);
       S.coins=ld("coins",300);S.lastRoute=ld("lastRoute",0);S.currentRoute=S.lastRoute;
       S.screen=S.party.length>0?"hub":"title";render();
@@ -1005,6 +1034,7 @@ function bind(){
     users.push(name);setUsers(users);
     USER=name;S.party=[];S.caught=[];S.seen=[];S.badges=[];
     S.balls=20;S.greatBalls=0;S.ultraBalls=0;
+    S.quickBalls=0;S.duskBalls=0;S.netBalls=0;S.repeatBalls=0;S.masterBalls=0;
     S.potions=0;S.superPotions=0;S.revives=0;
     S.coins=300;S.lastRoute=0;S.currentRoute=0;
     S.screen="title";render();
@@ -1075,7 +1105,7 @@ function bind(){
       const price=BALLS[key]?BALLS[key].price:ITEMS[key].price;
       if(S.coins<price)return;
       S.coins-=price;
-      const field=key==="pokeball"?"balls":key==="greatBall"?"greatBalls":key==="ultraBall"?"ultraBalls":key==="potion"?"potions":key==="superPotion"?"superPotions":"revives";
+      const field=BALLS[key]?ballStock(key):key==="potion"?"potions":key==="superPotion"?"superPotions":"revives";
       S[field]++;saveAll();render();
     });
   });
@@ -1130,6 +1160,7 @@ function bind(){
     if(!confirm("Reset "+USER+"'s save?"))return;
     S.party=[];S.caught=[];S.seen=[];S.badges=[];
     S.balls=20;S.greatBalls=0;S.ultraBalls=0;
+    S.quickBalls=0;S.duskBalls=0;S.netBalls=0;S.repeatBalls=0;S.masterBalls=0;
     S.potions=0;S.superPotions=0;S.revives=0;
     S.coins=300;S.lastRoute=0;S.currentRoute=0;
     saveAll();S.screen="title";render();
