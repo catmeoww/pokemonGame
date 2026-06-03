@@ -206,6 +206,33 @@ function sv(k,v){try{localStorage.setItem(sk(k),JSON.stringify(v));}catch{}}
 function ld(k,d){try{const v=localStorage.getItem(sk(k));return v!=null?JSON.parse(v):d;}catch{return d;}}
 function getUsers(){try{return JSON.parse(localStorage.getItem("pk_users")||"[]");}catch{return[];}}
 function setUsers(u){try{localStorage.setItem("pk_users",JSON.stringify(u));}catch{}}
+function renameUser(oldName){
+  const proposed=prompt(`Rename "${oldName}" to:`,oldName);
+  if(proposed===null)return;
+  const newName=proposed.trim();
+  if(!newName||newName===oldName)return;
+  if(newName.length>16){alert("Name too long (max 16 chars)");return;}
+  const users=getUsers();
+  if(users.includes(newName)){alert("That name is already taken!");return;}
+  // Migrate every pk_<oldName>_* key
+  const oldPrefix="pk_"+oldName+"_";
+  const newPrefix="pk_"+newName+"_";
+  const toMigrate=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith(oldPrefix))toMigrate.push(k);
+  }
+  toMigrate.forEach(k=>{
+    const v=localStorage.getItem(k);
+    localStorage.setItem(newPrefix+k.slice(oldPrefix.length),v);
+    localStorage.removeItem(k);
+  });
+  const idx=users.indexOf(oldName);
+  if(idx>=0){users[idx]=newName;setUsers(users);}
+  if(USER===oldName)USER=newName;
+  render();
+}
+
 function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","quickBalls","duskBalls","netBalls","repeatBalls","masterBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
 function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("quickBalls",S.quickBalls);sv("duskBalls",S.duskBalls);sv("netBalls",S.netBalls);sv("repeatBalls",S.repeatBalls);sv("masterBalls",S.masterBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
 
@@ -279,7 +306,8 @@ function sUsers(){
               <div style="font-size:11px;color:#aaa">${(()=>{try{return(JSON.parse(localStorage.getItem("pk_"+u+"_caught")||"[]")).length+" caught";}catch{return"0 caught";}})()}</div>
             </div>
           </div>
-          <button class="delu" data-user="${u}" style="width:38px;padding:0.5rem;font-size:16px;color:#F44336;border-color:#F44336;background:transparent;flex-shrink:0">🗑️</button>
+          <button class="renu" data-user="${u}" title="Rename" style="width:38px;padding:0.5rem;font-size:14px;color:#4F8FD1;border-color:#4F8FD1;background:transparent;flex-shrink:0">✏️</button>
+          <button class="delu" data-user="${u}" title="Delete" style="width:38px;padding:0.5rem;font-size:16px;color:#F44336;border-color:#F44336;background:transparent;flex-shrink:0">🗑️</button>
         </div>`).join("")}
     </div>
     <div style="border-top:1px solid #333;padding-top:1.25rem">
@@ -1025,6 +1053,9 @@ function bind(){
       if(!confirm("Delete "+btn.dataset.user+"'s save?"))return;
       delUser(btn.dataset.user);render();
     });
+  });
+  document.querySelectorAll(".renu").forEach(btn=>{
+    btn.addEventListener("click",()=>renameUser(btn.dataset.user));
   });
   const ni=document.getElementById("ni");
   const addUser=()=>{
