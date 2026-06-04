@@ -124,7 +124,58 @@ const GYMS=[
    team:[{id:111,lv:45},{id:51,lv:42},{id:34,lv:45},{id:31,lv:43},{id:112,lv:50}],
    reward:{coins:5000,ultraBalls:10,superPotions:5,revives:5}},
 ];
-function gymUnlocked(idx){return idx===0||S.badges.includes(GYMS[idx-1].key);}
+
+// Infinite Elite-trainer ladder after Kanto's 8 gyms
+const ELITE_TRAINERS=["Lance","Cynthia","Steven","Wallace","Iris","Diantha","Leon","Geeta","Red","Blue","Lorelei","Bruno","Agatha","Sidney","Phoebe","Glacia","Drake","Aaron","Bertha","Flint","Lucian","Shauntal","Marshal","Grimsley","Caitlin","Malva","Wikstrom","Drasna","Siebold","Olivia","Acerola","Kahili","Hapu","Raihan","Piers","Marnie","Allister"];
+const ELITE_LOCATIONS=["Indigo Plateau","Battle Tower","Champion's Hall","Battle Frontier","Pokémon League","Battle Tree"];
+const ELITE_BADGE_EMOJIS=["⭐","🌟","✨","💫","🏅","🎖️","🥇","🏆","💎","🔱"];
+const ELITE_GYM_EMOJIS=["🗼","🌌","🌋","⚡","🌟","🏛️"];
+let _pokemonByType=null;
+function pokemonByType(){
+  if(_pokemonByType)return _pokemonByType;
+  const m={};TYPES.forEach(t=>m[t]=[]);
+  for(let id=1;id<=TOTAL;id++)getTypes(id).forEach(t=>{if(m[t])m[t].push(id);});
+  _pokemonByType=m;return m;
+}
+function generateGym(idx){
+  const tier=idx-GYMS.length;
+  const baseLv=Math.min(100,53+tier*3);
+  const teamSize=Math.min(6,3+Math.floor(tier/3));
+  const cycle=Math.floor(tier/ELITE_TRAINERS.length);
+  const nameBase=ELITE_TRAINERS[tier%ELITE_TRAINERS.length];
+  const name=cycle===0?nameBase:`${nameBase} #${cycle+1}`;
+  const city=ELITE_LOCATIONS[tier%ELITE_LOCATIONS.length];
+  const type=TYPES[tier%TYPES.length];
+  const pool=pokemonByType()[type]||[];
+  const team=[];
+  for(let i=0;i<teamSize;i++){
+    const pid=pool.length?pool[(tier*11+i*7)%pool.length]:25;
+    team.push({id:pid,lv:Math.min(100,baseLv+i*2)});
+  }
+  return{
+    key:"elite_"+tier,
+    name,city,
+    emoji:ELITE_GYM_EMOJIS[tier%ELITE_GYM_EMOJIS.length],
+    type,
+    badge:`Elite Badge ${tier+1}`,
+    badgeEmoji:ELITE_BADGE_EMOJIS[tier%ELITE_BADGE_EMOJIS.length],
+    team,
+    reward:{
+      coins:5000+tier*1000,
+      ultraBalls:5+tier,
+      revives:3+Math.floor(tier/2),
+      masterBalls:tier>=5?1:0,
+    },
+  };
+}
+function getGym(idx){return idx<GYMS.length?GYMS[idx]:generateGym(idx);}
+function eliteBadgesEarned(){return S.badges.filter(b=>b.startsWith("elite_")).length;}
+function kantoBadgesEarned(){return S.badges.filter(b=>!b.startsWith("elite_")).length;}
+function gymsToRender(){
+  if(kantoBadgesEarned()<GYMS.length)return GYMS.length;
+  return GYMS.length+eliteBadgesEarned()+1;
+}
+function gymUnlocked(idx){return idx===0||S.badges.includes(getGym(idx-1).key);}
 
 // ── ROUTES ────────────────────────────────────────────────────
 const ROUTES=[
@@ -383,7 +434,7 @@ function sHub(){
     <div style="height:0.75rem"></div>
     <div class="g2">
       <button id="broutes" ${L.currentHP<=0?"disabled":""}>🗺️ Routes</button>
-      <button id="bgyms" ${L.currentHP<=0?"disabled":""}>🏆 Gyms ${S.badges.length>0?`<span style="font-size:10px;color:#D9B921">(${S.badges.length}/8)</span>`:""}</button>
+      <button id="bgyms" ${L.currentHP<=0?"disabled":""}>🏆 Gyms ${S.badges.length>0?`<span style="font-size:10px;color:#D9B921">(${kantoBadgesEarned()}/${GYMS.length}${eliteBadgesEarned()>0?`+${eliteBadgesEarned()}`:""})</span>`:""}</button>
     </div>
     <div class="g2">
       <button id="bheal">💊 Heal all</button>
@@ -406,7 +457,7 @@ function sBattle(){
   if(!w||!pl)return sHub();
   const done=S.bState!=="active";
   const isTrainer=!!S.trainer;
-  const gym=isTrainer?GYMS[S.trainer.gymIdx]:null;
+  const gym=isTrainer?getGym(S.trainer.gymIdx):null;
   const stateColor={won:"#4CAF50",caught:"#4CAF50",ran:"#aaa",fainted:"#F44336",trainerLost:"#F44336"};
   const stateMsg={won:"Victory! 🎉",caught:`${w.name} caught! 🎉`,ran:"Got away safely! 🏃",fainted:"All Pokémon fainted! 😢",trainerLost:`${gym?gym.name+" beat you!":"You were beaten!"} 😢`};
   const notCaught=!S.caught.includes(w.id);
@@ -632,31 +683,37 @@ function sRoutes(){
 }
 
 function sGyms(){
+  const totalToShow=gymsToRender();
+  const eliteCount=eliteBadgesEarned();
   return`<div class="fi scr">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
       <button id="bhub" style="width:auto;padding:0.4rem 0.9rem;font-size:13px">← Back</button>
       <div><h2 style="margin:0">Gym Leaders</h2>
-        <div style="font-size:12px;color:#aaa">${S.badges.length}/8 badges · Defeat in order</div>
+        <div style="font-size:12px;color:#aaa">${kantoBadgesEarned()}/${GYMS.length} Kanto${eliteCount>0?` · ${eliteCount} Elite badge${eliteCount!==1?"s":""}`:""}</div>
       </div>
     </div>
-    ${GYMS.map((g,i)=>{
+    ${Array.from({length:totalToShow},(_,i)=>i).map(i=>{
+      const g=getGym(i);
       const unlocked=gymUnlocked(i);
       const earned=S.badges.includes(g.key);
+      const isElite=i>=GYMS.length;
       const maxLv=Math.max(...g.team.map(m=>m.lv));
-      return`<div class="card" style="display:flex;align-items:center;gap:12px;opacity:${unlocked?1:0.45};border-color:${earned?"#D9B921":"#3a3a5e"}">
+      return`<div class="card" style="display:flex;align-items:center;gap:12px;opacity:${unlocked?1:0.45};border-color:${earned?(isElite?"#9C27B0":"#D9B921"):"#3a3a5e"}">
         <div style="font-size:34px;width:48px;text-align:center">${g.emoji}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
             <span style="font-weight:700">${g.name}</span>
             ${earned?`<span title="${g.badge}" style="font-size:14px">${g.badgeEmoji}</span>`:""}
             <span class="badge" style="background:${TCOLOR[TYPES.indexOf(g.type)]}">${g.type[0].toUpperCase()+g.type.slice(1)}</span>
+            ${isElite?`<span style="font-size:10px;color:#9C27B0;font-weight:700">ELITE</span>`:""}
           </div>
           <div style="font-size:11px;color:#aaa">${g.city}</div>
           <div style="font-size:11px;color:#D9B921;margin-top:2px">${g.team.length} Pokémon · Up to Lv.${maxLv}</div>
         </div>
-        ${unlocked?`<button class="gymbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:${earned?"#2a2a3e":"#3a2a1a"};border-color:${earned?"#888":"#D9B921"};color:${earned?"#888":"#D9B921"}">${earned?"Rematch":"Challenge ⚔️"}</button>`:`<div style="width:84px;font-size:18px;text-align:center;color:#555">🔒</div>`}
+        ${unlocked?`<button class="gymbtn" data-idx="${i}" style="width:auto;padding:0.5rem 0.85rem;font-size:13px;font-weight:600;background:${earned?"#2a2a3e":isElite?"#2a1a3a":"#3a2a1a"};border-color:${earned?"#888":isElite?"#9C27B0":"#D9B921"};color:${earned?"#888":isElite?"#D6B4FF":"#D9B921"}">${earned?"Rematch":"Challenge ⚔️"}</button>`:`<div style="width:84px;font-size:18px;text-align:center;color:#555">🔒</div>`}
       </div>`;
     }).join("")}
+    ${kantoBadgesEarned()>=GYMS.length?`<div style="text-align:center;color:#888;font-size:11px;margin-top:0.5rem;font-style:italic">Defeat each Elite to unlock the next — endless ladder!</div>`:""}
   </div>`;
 }
 
@@ -780,7 +837,7 @@ function doExplore(routeIdx){
 
 function doStartGym(idx){
   if(!gymUnlocked(idx))return;
-  const gym=GYMS[idx];
+  const gym=getGym(idx);
   S.trainer={gymIdx:idx,teamIdx:0};
   const m=gym.team[0];
   const w=buildWild(m.id,m.lv);
@@ -842,7 +899,7 @@ async function doAtk(){
     p=applyXpAndLevel(p,gained);
     S.party[0]=p;
     if(S.trainer){
-      const gym=GYMS[S.trainer.gymIdx];
+      const gym=getGym(S.trainer.gymIdx);
       addLog(`💀 ${S.wild.name} fainted! +${gained} XP, +${coinReward} 🪙`);
       S.trainer.teamIdx++;
       if(S.trainer.teamIdx>=gym.team.length){
@@ -856,6 +913,7 @@ async function doAtk(){
           if(r.balls){S.balls+=r.balls;rewardList.push({label:"🔴 Pokéballs",amount:r.balls});}
           if(r.greatBalls){S.greatBalls+=r.greatBalls;rewardList.push({label:"🔵 Great Balls",amount:r.greatBalls});}
           if(r.ultraBalls){S.ultraBalls+=r.ultraBalls;rewardList.push({label:"⚫ Ultra Balls",amount:r.ultraBalls});}
+          if(r.masterBalls){S.masterBalls+=r.masterBalls;rewardList.push({label:"⭐ Master Balls",amount:r.masterBalls});}
           if(r.potions){S.potions+=r.potions;rewardList.push({label:"🧪 Potions",amount:r.potions});}
           if(r.superPotions){S.superPotions+=r.superPotions;rewardList.push({label:"💉 Super Potions",amount:r.superPotions});}
           if(r.revives){S.revives+=r.revives;rewardList.push({label:"💖 Revives",amount:r.revives});}
