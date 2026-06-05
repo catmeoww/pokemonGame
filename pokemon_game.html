@@ -177,6 +177,44 @@ function gymsToRender(){
 }
 function gymUnlocked(idx){return idx===0||S.badges.includes(getGym(idx-1).key);}
 
+// ── MATH QUIZ (1st grade) ─────────────────────────────────────
+function makeMathChoices(q,correct){
+  const set=new Set([correct]);
+  let tries=0;
+  while(set.size<4&&tries<50){
+    tries++;
+    const variation=(Math.random()<0.5?-1:1)*(1+Math.floor(Math.random()*4));
+    const cand=correct+variation;
+    if(cand>=0&&cand<=25)set.add(cand);
+  }
+  const choices=Array.from(set);
+  // shuffle
+  for(let i=choices.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [choices[i],choices[j]]=[choices[j],choices[i]];
+  }
+  return{q,correct,choices,picked:null};
+}
+function pickMathQuestion(){
+  const t=Math.random();
+  if(t<0.6){
+    // Addition within 20
+    const a=1+Math.floor(Math.random()*10);
+    const b=1+Math.floor(Math.random()*Math.min(10,20-a));
+    return makeMathChoices(`${a} + ${b}`,a+b);
+  } else if(t<0.9){
+    // Subtraction within 20
+    const a=5+Math.floor(Math.random()*15);
+    const b=1+Math.floor(Math.random()*(a-1));
+    return makeMathChoices(`${a} − ${b}`,a-b);
+  } else {
+    // Missing addend
+    const total=5+Math.floor(Math.random()*15);
+    const a=1+Math.floor(Math.random()*(total-1));
+    return makeMathChoices(`${a} + ? = ${total}`,total-a);
+  }
+}
+
 // ── ROUTES ────────────────────────────────────────────────────
 const ROUTES=[
   {name:"Pallet Outskirts",emoji:"🌾",desc:"Grassy fields, easy walks",lvMin:2,lvMax:7,unlockAt:0,ids:[10,13,16,19,21,29,32,161,163,172,191,263,265,396,399,504,506,519,659,661,731,734,819,821]},
@@ -284,8 +322,8 @@ function renameUser(oldName){
   render();
 }
 
-function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","quickBalls","duskBalls","netBalls","repeatBalls","masterBalls","potions","superPotions","revives","coins","lastRoute"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
-function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("quickBalls",S.quickBalls);sv("duskBalls",S.duskBalls);sv("netBalls",S.netBalls);sv("repeatBalls",S.repeatBalls);sv("masterBalls",S.masterBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);}
+function delUser(name){["party","caught","seen","badges","balls","greatBalls","ultraBalls","quickBalls","duskBalls","netBalls","repeatBalls","masterBalls","potions","superPotions","revives","coins","lastRoute","mathEnabled"].forEach(k=>localStorage.removeItem("pk_"+name+"_"+k));setUsers(getUsers().filter(x=>x!==name));}
+function saveAll(){sv("party",S.party);sv("caught",S.caught);sv("seen",S.seen);sv("badges",S.badges);sv("balls",S.balls);sv("greatBalls",S.greatBalls);sv("ultraBalls",S.ultraBalls);sv("quickBalls",S.quickBalls);sv("duskBalls",S.duskBalls);sv("netBalls",S.netBalls);sv("repeatBalls",S.repeatBalls);sv("masterBalls",S.masterBalls);sv("potions",S.potions);sv("superPotions",S.superPotions);sv("revives",S.revives);sv("coins",S.coins);sv("lastRoute",S.lastRoute);sv("mathEnabled",S.mathEnabled);}
 
 // ── STATE ─────────────────────────────────────────────────────
 const S={
@@ -301,6 +339,7 @@ const S={
   pendingEvo:null,levelUpData:null,gymRewardData:null,
   switchCtx:"hub", // "hub" | "battle" | "faint"
   bagOpen:false,reviveTarget:false,
+  mathEnabled:true,mathQuestion:null,
 };
 function addLog(m){S.log=[...S.log.slice(-30),m];}
 
@@ -403,9 +442,12 @@ function sHub(){
   const L=S.party[0];
   if(!L)return`<div class="scr"><p>No party!</p></div>`;
   return`<div class="fi scr">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem">
       <span style="font-size:13px;color:#aaa">👤 <strong style="color:#eee">${USER}</strong></span>
       <span style="font-size:12px;color:#D9B921;font-weight:600">🪙 ${S.coins}</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:0.5rem">
+      <button id="bmathtoggle" style="width:auto;padding:0.25rem 0.6rem;font-size:11px;background:transparent;border-color:${S.mathEnabled?"#D9B921":"#555"};color:${S.mathEnabled?"#D9B921":"#888"}">🧮 Math practice: ${S.mathEnabled?"ON":"OFF"}</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:0.5rem;font-size:11px;color:#aaa;flex-wrap:wrap">
       ${BALL_KEYS.map(k=>{const c=S[ballStock(k)];return`<span title="${BALLS[k].name}" style="opacity:${c>0?1:0.4}">${BALLS[k].emoji} ${c}</span>`;}).join("")}
@@ -512,7 +554,30 @@ function sBattle(){
           </div>`:""}
         <button id="bhub" style="padding:0.75rem 2rem;width:auto;display:inline-block">← Back to hub</button>
       </div>`:`
-      ${S.bagOpen?`
+      ${S.mathQuestion?(()=>{
+        const mq=S.mathQuestion;
+        const answered=mq.picked!==null;
+        const got=answered&&mq.picked===mq.correct;
+        return`<div class="card" style="border-color:#D9B921;text-align:center;margin-bottom:0">
+          <div style="font-size:11px;color:#aaa;margin-bottom:8px;letter-spacing:1px;font-weight:700">🧮 QUICK MATH!</div>
+          <div style="font-size:30px;font-weight:800;margin-bottom:14px;letter-spacing:1px">${mq.q} = ?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${mq.choices.map(c=>{
+              const isPicked=mq.picked===c;
+              const isRight=c===mq.correct;
+              let style="font-size:20px;padding:0.85rem;font-weight:700;";
+              if(answered){
+                if(isPicked&&isRight)style+="background:#1a3a1a;border-color:#4CAF50;color:#4CAF50";
+                else if(isPicked&&!isRight)style+="background:#3a1a1a;border-color:#F44336;color:#F44336";
+                else if(isRight)style+="background:#1a3a1a;border-color:#4CAF50;color:#4CAF50;opacity:0.7";
+                else style+="opacity:0.45";
+              }
+              return`<button class="mathopt" data-val="${c}" ${answered?"disabled":""} style="${style}">${c}</button>`;
+            }).join("")}
+          </div>
+          ${answered?`<div style="margin-top:12px;font-size:14px;color:${got?"#4CAF50":"#F44336"};font-weight:600">${got?"✓ Correct! Full power attack!":"✗ Half power... answer is "+mq.correct}</div>`:`<button id="bcancelmath" style="margin-top:10px;width:auto;padding:0.35rem 0.85rem;font-size:11px;background:transparent;border-color:#555;color:#888">↩ Cancel</button>`}
+        </div>`;
+      })():S.bagOpen?`
         <div class="card" style="border-color:#4F8FD1;margin-bottom:0">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
             <span style="font-weight:700">🎒 Bag</span>
@@ -827,7 +892,7 @@ function doExplore(routeIdx){
   const w=buildWild(id,level);
   if(!S.seen.includes(id)){S.seen.push(id);sv("seen",S.seen);}
   S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
-  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;S.mathQuestion=null;
   addLog(`⚡ A wild ${w.name} appeared! (${ROUTES[S.currentRoute].name})`);
   const e=tEff(S.party[0].types,w.types);
   if(e>=2)addLog("✨ Your type is super effective!");
@@ -843,7 +908,7 @@ function doStartGym(idx){
   const w=buildWild(m.id,m.lv);
   if(!S.seen.includes(m.id)){S.seen.push(m.id);}
   S.wild=w;S.wildHP=w.maxHP;S.playerHP=S.party[0].currentHP;
-  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;
+  S.log=[];S.pendingEvo=null;S.levelUpData=null;S.bagOpen=false;S.turnCount=0;S.mathQuestion=null;
   addLog(`🎽 ${gym.name} challenges you to a battle!`);
   addLog(`🎽 ${gym.name} sends out ${w.name}!`);
   S.bState="active";S.screen="battle";render();
@@ -882,14 +947,21 @@ function applyXpAndLevel(p,gained){
   return p;
 }
 
-async function doAtk(){
+async function doAtk(mult){
   if(S.busy||S.bState!=="active")return;
+  // If math practice is enabled and no question is showing yet, pop one
+  if(S.mathEnabled&&S.mathQuestion===null&&mult===undefined){
+    S.mathQuestion=pickMathQuestion();
+    render();return;
+  }
+  mult=mult||1;
   S.busy=true;S.turnCount++;render();
   const pl=S.party[0];
-  const{dmg,eff}=calcDmg(pl,S.wild);
+  const{dmg:baseDmg,eff}=calcDmg(pl,S.wild);
+  const dmg=Math.max(1,Math.floor(baseDmg*mult));
   S.wildHP=Math.max(0,S.wildHP-dmg);
   const oppLabel=S.trainer?"":"Wild ";
-  addLog(`⚔️ ${pl.name} dealt ${dmg} dmg!${eff>=2?" Super effective!":eff>0&&eff<1?" Not very effective...":eff===0?" No effect!":""}`);
+  addLog(`⚔️ ${pl.name} dealt ${dmg} dmg!${mult<1?" (Half power)":""}${eff>=2?" Super effective!":eff>0&&eff<1?" Not very effective...":eff===0?" No effect!":""}`);
   if(S.wildHP<=0){
     const wLv=S.wild.level||5;
     const coinReward=Math.floor(15+wLv*2+Math.random()*wLv*1.5);
@@ -1103,6 +1175,7 @@ function bind(){
       S.quickBalls=ld("quickBalls",0);S.duskBalls=ld("duskBalls",0);S.netBalls=ld("netBalls",0);S.repeatBalls=ld("repeatBalls",0);S.masterBalls=ld("masterBalls",0);
       S.potions=ld("potions",0);S.superPotions=ld("superPotions",0);S.revives=ld("revives",0);
       S.coins=ld("coins",300);S.lastRoute=ld("lastRoute",0);S.currentRoute=S.lastRoute;
+      S.mathEnabled=ld("mathEnabled",true);S.mathQuestion=null;
       S.screen=S.party.length>0?"hub":"title";render();
     });
   });
@@ -1134,7 +1207,7 @@ function bind(){
   // Nav
   on("bnew",()=>{S.screen="starter";render();});
   on("bhub",()=>{
-    S.levelUpData=null;S.bagOpen=false;S.gymRewardData=null;
+    S.levelUpData=null;S.bagOpen=false;S.gymRewardData=null;S.mathQuestion=null;
     // If returning from a lost trainer battle, free heal
     if(S.trainer&&S.bState==="fainted"){
       S.party=S.party.map(p=>({...p,currentHP:p.maxHP}));
@@ -1208,9 +1281,25 @@ function bind(){
   });
 
   // Battle
-  on("batk",doAtk);
+  on("batk",()=>doAtk());
   on("brun",doRun);
   on("bheal",doHeal);
+
+  // Math quiz
+  on("bmathtoggle",()=>{S.mathEnabled=!S.mathEnabled;saveAll();render();});
+  on("bcancelmath",()=>{S.mathQuestion=null;render();});
+  document.querySelectorAll(".mathopt").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      if(!S.mathQuestion||S.mathQuestion.picked!==null)return;
+      const val=parseInt(btn.dataset.val);
+      S.mathQuestion.picked=val;
+      render();
+      await delay(900);
+      const correct=val===S.mathQuestion.correct;
+      S.mathQuestion=null;
+      doAtk(correct?1:0.5);
+    });
+  });
 
   // Catch fainted wild
   on("bcatchfainted",()=>{
